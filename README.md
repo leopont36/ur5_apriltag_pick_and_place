@@ -8,5 +8,5 @@
 2. Compile the packages:
   ```bash
   cd ..
-  colcon build --packages-select [TO DO]
+  colcon build --packages-select ur5_moveit
   ```
