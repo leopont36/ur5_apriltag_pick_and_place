@@ -19,11 +19,13 @@ find_package(std_srvs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(unique_identifier_msgs REQUIRED)
 
-# Generate custom action
+# Generate custom interfaces
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/MoveToPose.action"
+  "srv/GripperRequest.srv"
   DEPENDENCIES geometry_msgs action_msgs unique_identifier_msgs
 )
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 include_directories(include)
 
@@ -37,9 +39,34 @@ ament_target_dependencies(motion_planner
   geometry_msgs
   tf2_ros
   tf2_geometry_msgs
-)
-rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+)   
 target_link_libraries(motion_planner "${cpp_typesupport_target}")
+
+add_executable(gripper_node
+  src/gripper_node.cpp
+)
+target_include_directories(gripper_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+ament_target_dependencies(gripper_node
+  rclcpp
+  moveit_ros_planning_interface
+  moveit_core
+  moveit_msgs
+)
+
+target_link_libraries(gripper_node "${cpp_typesupport_target}")
+
+# --- Gripper Test Client ---
+add_executable(gripper_test_client
+  src/gripper_test_client.cpp
+)
+ament_target_dependencies(gripper_test_client
+  rclcpp
+)
+# Link against the custom service definitions
+target_link_libraries(gripper_test_client "${cpp_typesupport_target}")
 
 install(DIRECTORY launch/
   DESTINATION share/${PROJECT_NAME}/launch
@@ -51,6 +78,8 @@ install(DIRECTORY cfg/
 
 install(TARGETS
   motion_planner
+  gripper_node
+  gripper_test_client
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -20,8 +20,21 @@ def generate_launch_description():
         AnyLaunchDescriptionSource(apriltag_file)
     )
 
+    gripper_node = Node(
+        package='ur5_moveit',
+        executable='gripper_node',
+        output='screen',
+        emulate_tty=True
+    )
+
+    delayed_servers = TimerAction(
+        period=5.0,
+        actions=[gripper_node]
+    )
+
     return LaunchDescription([
         assignment_launch,
-        apriltag_launch,
+        #apriltag_launch,
+        gripper_node,
     ])  
     
