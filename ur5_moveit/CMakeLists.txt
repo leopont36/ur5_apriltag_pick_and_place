@@ -58,15 +58,15 @@ ament_target_dependencies(gripper_node
 
 target_link_libraries(gripper_node "${cpp_typesupport_target}")
 
-# --- Gripper Test Client ---
+# TO DELETE
 add_executable(gripper_test_client
   src/gripper_test_client.cpp
 )
 ament_target_dependencies(gripper_test_client
   rclcpp
 )
-# Link against the custom service definitions
 target_link_libraries(gripper_test_client "${cpp_typesupport_target}")
+# UNTIL HERE
 
 install(DIRECTORY launch/
   DESTINATION share/${PROJECT_NAME}/launch
