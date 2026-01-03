@@ -1,9 +1,12 @@
 #ifndef MOTION_PLANNER_HPP_
 #define MOTION_PLANNER_HPP_
 
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
-#include <rclcpp/node_options.hpp>
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
+#include "rclcpp/node_options.hpp"
+
+#include "ur5_moveit/action/move_to_pose.hpp"
+
 #include <memory>
 #include <thread>
 #include <chrono>
@@ -18,10 +21,13 @@ class MotionPlanner : public rclcpp::Node
 public:
     MotionPlanner();
 private:
+    using MoveToPose = ur5_moveit::action::MoveToPose;
+    using GoalHandle = rclcpp_action::ServerGoalHandle<MoveToPose>;
+
     rclcpp_action::GoalResponse handleGoal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const MoveToPose::Goal> goal);
-    void handleAccepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<MoveToPose>> goal_handle);
-    rclcpp_action::CancelResponse handleCancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<MoveToPose>> goal_handle);
-    void execute(const std::shared_ptr<rclcpp_action::ServerGoalHandle<MoveToPose>> goal_handle);
+    void handleAccepted(const std::shared_ptr<GoalHandle> goal_handle);
+    rclcpp_action::CancelResponse handleCancel(const std::shared_ptr<GoalHandle> goal_handle);
+    void execute(const std::shared_ptr<GoalHandle> goal_handle);
 
 
     std::shared_ptr<moveit::planning_interface::MoveGroupInterface> move_group_;
