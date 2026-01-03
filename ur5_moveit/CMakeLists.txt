@@ -8,14 +8,38 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(moveit_ros_planning_interface REQUIRED)
+find_package(moveit_core REQUIRED)
+find_package(moveit_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(apriltag_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(unique_identifier_msgs REQUIRED)
+
+# Generate custom action
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/MoveToPose.action"
+  DEPENDENCIES geometry_msgs action_msgs unique_identifier_msgs
+)
 
 include_directories(include)
 
-
+add_executable(motion_planner src/motion_planner.cpp)
+ament_target_dependencies(motion_planner
+  rclcpp
+  rclcpp_action
+  moveit_ros_planning_interface
+  moveit_core
+  moveit_msgs
+  geometry_msgs
+  tf2_ros
+  tf2_geometry_msgs
+)
+rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(motion_planner "${cpp_typesupport_target}")
 
 install(DIRECTORY launch/
   DESTINATION share/${PROJECT_NAME}/launch
@@ -26,6 +50,7 @@ install(DIRECTORY cfg/
 )
 
 install(TARGETS
+  motion_planner
   DESTINATION lib/${PROJECT_NAME}
 )
 
