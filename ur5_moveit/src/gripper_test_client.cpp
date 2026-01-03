@@ -13,13 +13,13 @@ class GripperTestClient : public rclcpp::Node
 public:
     GripperTestClient() : Node("gripper_test_client")
     {
-        // create the Client
+        // create the client
         client_ = this->create_client<ur5_moveit::srv::GripperRequest>("gripper_service");
     }
 
     void send_command(std::string cmd)
     {
-        // wait for the Service to be available
+        // wait for the service to be available
         while (!client_->wait_for_service(1s)) {
             if (!rclcpp::ok()) {
                 RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
@@ -28,7 +28,7 @@ public:
             RCLCPP_INFO(this->get_logger(), "Service 'gripper_service' not available, waiting again...");
         }
 
-        // create and send the Request
+        // create and send the request
         auto request = std::make_shared<ur5_moveit::srv::GripperRequest::Request>();
         request->command = cmd;
         RCLCPP_INFO(this->get_logger(), "Sending request: '%s'", cmd.c_str());

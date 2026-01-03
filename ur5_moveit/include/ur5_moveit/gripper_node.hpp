@@ -18,7 +18,7 @@ public:
 private:
     /**
      * @brief Service callback
-     * It receives open or clos" commands and executes them using MoveIt
+     * It receives open or close commands and executes them using MoveIt
      */
     void handle_gripper_command(
         const std::shared_ptr<ur5_moveit::srv::GripperRequest::Request> request,
