@@ -55,18 +55,18 @@ ament_target_dependencies(gripper_node
   moveit_core
   moveit_msgs
 )
-
 target_link_libraries(gripper_node "${cpp_typesupport_target}")
 
-# TO DELETE
-add_executable(gripper_test_client
-  src/gripper_test_client.cpp
-)
-ament_target_dependencies(gripper_test_client
+add_executable(swap_coordinator src/swap_coordinator.cpp)
+ament_target_dependencies(swap_coordinator
   rclcpp
-)
-target_link_libraries(gripper_test_client "${cpp_typesupport_target}")
-# UNTIL HERE
+  rclcpp_action
+  geometry_msgs
+  tf2_ros
+  tf2_geometry_msgs
+)   
+target_link_libraries(swap_coordinator "${cpp_typesupport_target}") 
+
 
 install(DIRECTORY launch/
   DESTINATION share/${PROJECT_NAME}/launch
@@ -79,7 +79,7 @@ install(DIRECTORY cfg/
 install(TARGETS
   motion_planner
   gripper_node
-  gripper_test_client
+  swap_coordinator
   DESTINATION lib/${PROJECT_NAME}
 )
 
