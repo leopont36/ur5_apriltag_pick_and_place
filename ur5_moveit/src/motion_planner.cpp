@@ -2,33 +2,32 @@
 
 MotionPlanner::MotionPlanner() : Node("motion_planner_node")
 {
-    // MoveIt setup
-    auto setup = [this]() {
-        std::this_thread::sleep_for(std::chrono::seconds(2)); // Allow moveit to initialize
-            
-        static const std::string FRAME_ID = "base_link";
-        static const std::string PLANNING_GROUP = "ir_arm";
-        move_group_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(shared_from_this(), PLANNING_GROUP);
-            
-        move_group_->setMaxVelocityScalingFactor(1.0);
-        move_group_->setMaxAccelerationScalingFactor(1.0);
-        move_group_->setPlanningTime(5.0);
-            
-        RCLCPP_INFO(this->get_logger(), "Motion Planner ready");
-    };
-    std::thread(setup).detach();
-        
     // Action server
-    action_server_ = rclcpp_action::create_server<MoveToPose>(this,"move_to_pose",
+    action_server_ = rclcpp_action::create_server<MoveToPose>(this, "move_to_pose",
         std::bind(&MotionPlanner::handleGoal, this, std::placeholders::_1, std::placeholders::_2),
         std::bind(&MotionPlanner::handleCancel, this, std::placeholders::_1),
         std::bind(&MotionPlanner::handleAccepted, this, std::placeholders::_1));
         
     RCLCPP_INFO(this->get_logger(), "Motion Planner Action Server started");
+}
+
+void MotionPlanner::initializeMoveIt()
+{
+    static const std::string PLANNING_GROUP = "ir_arm";
+    move_group_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(shared_from_this(), PLANNING_GROUP);
+    
+    move_group_->setMaxVelocityScalingFactor(1.0);
+    move_group_->setMaxAccelerationScalingFactor(1.0);
+    move_group_->setPlanningTime(10.0);
+
+    move_group_->setStartStateToCurrentState();
+    
+    RCLCPP_INFO(this->get_logger(), "Motion Planner ready");
+    
     geometry_msgs::msg::PoseStamped p = move_group_->getCurrentPose();
     RCLCPP_INFO(this->get_logger(), "Current Pose frame id: %s", p.header.frame_id.c_str());
-    
 }
+
 rclcpp_action::GoalResponse MotionPlanner::handleGoal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const MoveToPose::Goal> goal)
 {
     RCLCPP_INFO(this->get_logger(), "Received target pose: [%.2f, %.2f, %.2f]", 
@@ -123,6 +122,10 @@ void MotionPlanner::execute(const std::shared_ptr<GoalHandle> goal_handle)
 int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<MotionPlanner>();
+    
+    // Initialize MoveIt after node creation
+    node->initializeMoveIt();
+
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;

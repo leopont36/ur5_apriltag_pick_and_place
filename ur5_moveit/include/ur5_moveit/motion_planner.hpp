@@ -20,6 +20,7 @@ class MotionPlanner : public rclcpp::Node
 {
 public:
     MotionPlanner();
+    void initializeMoveIt();
 private:
     using MoveToPose = ur5_moveit::action::MoveToPose;
     using GoalHandle = rclcpp_action::ServerGoalHandle<MoveToPose>;
