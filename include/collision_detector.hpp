@@ -25,7 +25,7 @@ class CollisionDetector : public rclcpp::Node
 {
     public:
 
-        CollisionDetector(const rclcpp::NodeOptions & options);
+        CollisionDetector();
     
     private:
 
