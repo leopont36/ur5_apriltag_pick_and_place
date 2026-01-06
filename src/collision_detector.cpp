@@ -1,7 +1,7 @@
 #include "hello_moveit/collision_detector.hpp"
 
 
-CollisionDetector::CollisionDetector(const rclcpp::NodeOptions & options) : Node("collision_detector")
+CollisionDetector::CollisionDetector() : Node("collision_detector")
 {
         
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
@@ -113,13 +113,8 @@ void CollisionDetector::addCollisionBox()
 int main(int argc, char * argv[])
 {
     rclcpp::init(argc, argv);
-    rclcpp::NodeOptions node_options;
-    node_options.automatically_declare_parameters_from_overrides(true);
-    node_options.parameter_overrides({
-        {"use_sim_time", true}
-    });
 
-    auto node = std::make_shared<CollisionDetector>(node_options);
+    auto node = std::make_shared<CollisionDetector>();
 
     rclcpp::spin(node);
     rclcpp::shutdown();
