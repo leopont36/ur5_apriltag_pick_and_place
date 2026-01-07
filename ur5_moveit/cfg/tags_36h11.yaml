@@ -20,6 +20,6 @@
 
         #optional list of tags
         tag:
-            ids: [0,1,2]            # tag ID
+            ids: [1,10]            # tag ID
             # frames: [external_camera_link, external_camera_link]  # optional frame name
             # sizes: [0.065, 0.065]   # optional tag-specific edge size

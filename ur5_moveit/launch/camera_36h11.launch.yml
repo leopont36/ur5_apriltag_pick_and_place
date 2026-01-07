@@ -21,27 +21,27 @@ launch:
       namespace: camera
       remap:
       - from: image
-        to: /camera/camera/color/image_raw #
+        to: /camera/camera/color/image_raw
       - from: camera_info
         to: /camera/camera/color/camera_info
       extra_arg:
       - name: use_intra_process_comms
         value: "True"
 
-      # April tag ros
-    - pkg: group18_apriltag_ros
+    - pkg: apriltag_ros
       plugin: AprilTagNode
       name: apriltag
-      # April Tag Ros
       namespace: apriltag
       remap:
+        # Remap the RGB camera with the topic /rgb_camera/image
       - from: /apriltag/image_rect
-        to: /rgb_camera/image #
+        to: /rgb_camera/image
+        # Remap the RGB camera info with the topic /rgb_camera/camera_info
       - from: /camera/camera_info
-        to: /rgb_camera/camera_info #
+        to: /rgb_camera/camera_info 
 
       param:
-      - from: $(find-pkg-share group18_apriltag_ros)/cfg/tags_36h11.yaml
+      - from: $(find-pkg-share ur5_moveit)/cfg/tags_36h11.yaml
 
       extra_arg:
       - name: use_intra_process_comms
