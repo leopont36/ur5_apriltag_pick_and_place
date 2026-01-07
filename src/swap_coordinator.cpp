@@ -1,4 +1,4 @@
-#include "ur5_moveit/swap_coordinator.hpp"
+#include "group18_assignment_2/swap_coordinator.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
@@ -13,7 +13,7 @@ SwapCoordinator::SwapCoordinator() : Node("swap_coordinator_node")
         rclcpp::shutdown();
     }
     
-    gripper_client_ = this->create_client<ur5_moveit::srv::GripperRequest>("gripper_service");
+    gripper_client_ = this->create_client<group18_assignment_2::srv::GripperRequest>("gripper_service");
     RCLCPP_INFO(this->get_logger(), "Swap Coordinator initialized");
 }
 
@@ -149,7 +149,7 @@ bool SwapCoordinator::moveArmOverTarget(geometry_msgs::msg::PoseStamped pose, do
 bool SwapCoordinator::controlGripper(const std::string& cmd)
 {
     RCLCPP_INFO(get_logger(), "Gripper: %s", cmd.c_str());
-    auto req = std::make_shared<ur5_moveit::srv::GripperRequest::Request>();
+    auto req = std::make_shared<group18_assignment_2::srv::GripperRequest::Request>();
     req->command = cmd;
         
     auto future = gripper_client_->async_send_request(req);

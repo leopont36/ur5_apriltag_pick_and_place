@@ -8,5 +8,5 @@
 2. Compile the packages:
   ```bash
   cd ..
-  colcon build --packages-select ur5_moveit
+  colcon build --packages-select group18_assignment_2
   ```

@@ -7,7 +7,7 @@
 #include <chrono>
 #include <string>
 
-#include "ur5_moveit/srv/gripper_request.hpp" 
+#include "group18_assignment_2/srv/gripper_request.hpp" 
 
 class GripperNode : public rclcpp::Node
 {
@@ -21,11 +21,11 @@ private:
      * It receives open or close commands and executes them using MoveIt
      */
     void handle_gripper_command(
-        const std::shared_ptr<ur5_moveit::srv::GripperRequest::Request> request,
-        std::shared_ptr<ur5_moveit::srv::GripperRequest::Response> response);
+        const std::shared_ptr<group18_assignment_2::srv::GripperRequest::Request> request,
+        std::shared_ptr<group18_assignment_2::srv::GripperRequest::Response> response);
 
     // service server
-    rclcpp::Service<ur5_moveit::srv::GripperRequest>::SharedPtr service_;
+    rclcpp::Service<group18_assignment_2::srv::GripperRequest>::SharedPtr service_;
     
     // MoveIt interface
     std::shared_ptr<moveit::planning_interface::MoveGroupInterface> gripper_group_;

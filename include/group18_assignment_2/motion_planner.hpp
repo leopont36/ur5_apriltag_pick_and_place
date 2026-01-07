@@ -5,7 +5,7 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rclcpp/node_options.hpp"
 
-#include "ur5_moveit/action/move_to_pose.hpp"
+#include "group18_assignment_2/action/move_to_pose.hpp"
 
 #include <memory>
 #include <thread>
@@ -22,7 +22,7 @@ public:
     MotionPlanner();
     void initializeMoveIt();
 private:
-    using MoveToPose = ur5_moveit::action::MoveToPose;
+    using MoveToPose = group18_assignment_2::action::MoveToPose;
     using GoalHandle = rclcpp_action::ServerGoalHandle<MoveToPose>;
 
     rclcpp_action::GoalResponse handleGoal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const MoveToPose::Goal> goal);

@@ -56,3 +56,5 @@ Makefile
 # Setup files
 *.egg-info/
 dist/
+
+*Zone.Identifier

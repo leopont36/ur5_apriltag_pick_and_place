@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "ur5_moveit/srv/gripper_request.hpp"
+#include "group18_assignment_2/srv/gripper_request.hpp"
 
 using namespace std::chrono_literals;
 
@@ -14,7 +14,7 @@ public:
     GripperTestClient() : Node("gripper_test_client")
     {
         // create the client
-        client_ = this->create_client<ur5_moveit::srv::GripperRequest>("gripper_service");
+        client_ = this->create_client<group18_assignment_2::srv::GripperRequest>("gripper_service");
     }
 
     void send_command(std::string cmd)
@@ -29,7 +29,7 @@ public:
         }
 
         // create and send the request
-        auto request = std::make_shared<ur5_moveit::srv::GripperRequest::Request>();
+        auto request = std::make_shared<group18_assignment_2::srv::GripperRequest::Request>();
         request->command = cmd;
         RCLCPP_INFO(this->get_logger(), "Sending request: '%s'", cmd.c_str());
         auto result_future = client_->async_send_request(request);
@@ -50,7 +50,7 @@ public:
     }
 
 private:
-    rclcpp::Client<ur5_moveit::srv::GripperRequest>::SharedPtr client_;
+    rclcpp::Client<group18_assignment_2::srv::GripperRequest>::SharedPtr client_;
 };
 
 int main(int argc, char **argv)

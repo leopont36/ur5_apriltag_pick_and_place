@@ -1,4 +1,4 @@
-#include "ur5_moveit/gripper_node.hpp"
+#include "group18_assignment_2/gripper_node.hpp"
 
 // Defined based on your RViz screenshot verification
 static const std::string GRIPPER_PLANNING_GROUP = "ir_gripper"; 
@@ -6,7 +6,7 @@ static const std::string GRIPPER_PLANNING_GROUP = "ir_gripper";
 GripperNode::GripperNode() : Node("gripper_node")
 {
     // create the service gripper_service
-    service_ = this->create_service<ur5_moveit::srv::GripperRequest>(
+    service_ = this->create_service<group18_assignment_2::srv::GripperRequest>(
         "gripper_service",
         std::bind(&GripperNode::handle_gripper_command, this, std::placeholders::_1, std::placeholders::_2));
 
@@ -38,8 +38,8 @@ void GripperNode::init_moveit()
 }
 
 void GripperNode::handle_gripper_command(
-    const std::shared_ptr<ur5_moveit::srv::GripperRequest::Request> request,
-    std::shared_ptr<ur5_moveit::srv::GripperRequest::Response> response)
+    const std::shared_ptr<group18_assignment_2::srv::GripperRequest::Request> request,
+    std::shared_ptr<group18_assignment_2::srv::GripperRequest::Response> response)
 {
     RCLCPP_INFO(this->get_logger(), "Received command: '%s'", request->command.c_str());
 

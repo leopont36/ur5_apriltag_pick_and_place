@@ -1,4 +1,4 @@
-#include "ur5_moveit/motion_planner.hpp"
+#include "group18_assignment_2/motion_planner.hpp"
 
 MotionPlanner::MotionPlanner() : Node("motion_planner_node")
 {

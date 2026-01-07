@@ -1,4 +1,4 @@
-string command  # "open", "close"
+string command  # "open" or "close"
 ---
 bool success
 string message # optional
