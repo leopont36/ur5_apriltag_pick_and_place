@@ -48,25 +48,28 @@ def generate_launch_description():
         emulate_tty=True,
         parameters=[{'use_sim_time': True}]
     )
+
+    collision_detector = Node(
+        package='group18_assignment_2',
+        executable='collision_detector',
+        name='collision_detector',
+        output='screen',
+        emulate_tty=True,
+        parameters=[{'use_sim_time': True}]
+    )
     
     return LaunchDescription([
-        # Launch assignment e apriltag subito
+        # Launch assignment and apriltag
         assignment_launch,
         apriltag_launch,
         
-        # Gripper dopo 5 secondi
+        # Gripper, motion and collision after 5 seconds
         TimerAction(
             period=5.0,
-            actions=[gripper_node]
+            actions=[gripper_node, motion_planner, collision_detector]
         ),
         
-        # Motion planner dopo 20 secondi
-        TimerAction(
-            period=10.0,
-            actions=[motion_planner]    
-        ),
-        
-        # Swap coordinator dopo 30 secondi
+        # Swap coordinator after 20 seconds
         TimerAction(
             period=20.0,
             actions=[swap_coordinator]    
