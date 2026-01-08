@@ -62,6 +62,14 @@ void GripperNode::handle_gripper_command(
     if (plan_success) {
         moveit::core::MoveItErrorCode result = gripper_group_->move();
         if (result == moveit::core::MoveItErrorCode::SUCCESS) {
+            if(request->command == "open" && !request->object_id.empty()) {
+                RCLCPP_INFO(this->get_logger(), "Detaching object '%s' from gripper.", request->object_id.c_str());
+                gripper_group_->detachObject(request->object_id);
+            }
+            if(request->command == "close" && !request->object_id.empty()) {
+                RCLCPP_INFO(this->get_logger(), "Attaching object '%s' to gripper.", request->object_id.c_str());
+                gripper_group_->attachObject(request->object_id, "tool0", gripper_group_->getLinkNames());
+            }
             response->success = true;
             response->message = "Gripper Action Succeeded.";
         } else {

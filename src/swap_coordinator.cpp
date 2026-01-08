@@ -46,15 +46,15 @@ bool SwapCoordinator::swapTags(const std::string& tag1_frame, const std::string&
 
     // Sequence for swapping
     RCLCPP_INFO(get_logger(), "Moving cube 1 to temp position");
-    if (!pickAndPlace(grasp1, temp))
+    if (!pickAndPlace(grasp1, temp, tag1_frame))
         return false;
 
     RCLCPP_INFO(get_logger(), "Moving cube 2 to position 1");
-    if (!pickAndPlace(grasp2, grasp1))
+    if (!pickAndPlace(grasp2, grasp1, tag2_frame))
         return false;
 
     RCLCPP_INFO(get_logger(), "Moving cube 1 to position 2");
-    if (!pickAndPlace(temp, grasp2))
+    if (!pickAndPlace(temp, grasp2, tag1_frame))
         return false;
 
     RCLCPP_INFO(this->get_logger(), "Successfully swapped %s and %s", tag1_frame.c_str(), tag2_frame.c_str());
@@ -155,11 +155,12 @@ bool SwapCoordinator::moveArmOverTarget(geometry_msgs::msg::PoseStamped pose, do
     return true;
 }
 
-bool SwapCoordinator::controlGripper(const std::string& cmd)
+bool SwapCoordinator::controlGripper(const std::string& cmd, const std::string& object_id)
 {
     RCLCPP_INFO(get_logger(), "Gripper: %s", cmd.c_str());
     auto req = std::make_shared<group18_assignment_2::srv::GripperRequest::Request>();
     req->command = cmd;
+    req->object_id = object_id;
         
     auto future = gripper_client_->async_send_request(req);
     if (future.wait_for(std::chrono::seconds(15)) != std::future_status::ready) {
@@ -176,38 +177,38 @@ bool SwapCoordinator::controlGripper(const std::string& cmd)
     return true;
 }
 
-bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometry_msgs::msg::PoseStamped place)
+bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometry_msgs::msg::PoseStamped place, const std::string& object_id)
 {
     // Settings to avoid collision/air-grasp
     double hover_z = 0.15; 
     
     RCLCPP_INFO(get_logger(), "Pick: [%.3f, %.3f, %.3f] → Place: [%.3f, %.3f, %.3f]", pick.pose.position.x, pick.pose.position.y, pick.pose.position.z, place.pose.position.x, place.pose.position.y, place.pose.position.z);
-    
     if (!controlGripper("open"))
         return false; 
     
     // PICK SEQUENCE
     RCLCPP_INFO(get_logger(), "Approaching (hover)...");
     if (!moveArmOverTarget(pick, hover_z)) return false;
+    rclcpp::sleep_for(std::chrono::milliseconds(800));
 
     RCLCPP_INFO(get_logger(), "Closing gripper");
-    if (!controlGripper("close")) 
+    if (!controlGripper("close", object_id)) 
         return false;
     
     RCLCPP_INFO(get_logger(), "Lifting the cube");
-    if (!moveArmOverTarget(pick, 0.20)) 
+    if (!moveArmOverTarget(pick, hover_z)) 
         return false;
         
     RCLCPP_INFO(get_logger(), "Moving to place position");
-    if (!moveArmOverTarget(place, 0.05))
+    if (!moveArmOverTarget(place, hover_z))
         return false;
         
     RCLCPP_INFO(get_logger(), "Opening gripper");
-    if (!controlGripper("open")) 
+    if (!controlGripper("open", object_id)) 
         return false;
     
     RCLCPP_INFO(get_logger(), "Retreating");
-    if (!moveArmOverTarget(place, 0.10))
+    if (!moveArmOverTarget(place, hover_z))
         return false;
     
     RCLCPP_INFO(get_logger(), "Pick-and-place complete!");

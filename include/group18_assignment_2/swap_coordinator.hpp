@@ -22,11 +22,12 @@ private:
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
     rclcpp_action::Client<MoveToPose>::SharedPtr action_client_;
     rclcpp::Client<group18_assignment_2::srv::GripperRequest>::SharedPtr gripper_client_;
+
     
     bool getGraspPose(const std::string& tag_frame, geometry_msgs::msg::PoseStamped& grasp_pose);
     bool moveArmOverTarget(geometry_msgs::msg::PoseStamped pose, double offset_z);
-    bool controlGripper(const std::string& cmd);
-    bool pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometry_msgs::msg::PoseStamped place);
+    bool controlGripper(const std::string& cmd, const std::string& object_id = "");
+    bool pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometry_msgs::msg::PoseStamped place, const std::string& object_id);
 };
 
 #endif  // SWAP_COORDINATOR_HPP_

@@ -1,4 +1,5 @@
 string command  # "open" or "close"
+string object_id  
 ---
 bool success
 string message # optional
