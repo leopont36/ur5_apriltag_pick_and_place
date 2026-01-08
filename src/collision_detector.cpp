@@ -50,8 +50,9 @@ void CollisionDetector::addCollisionBox()
 
 
             shape_msgs::msg::SolidPrimitive primitive;
-            double width = 0.04; // slightly smaller than the real size (0.06) to allow grip
-            double height = 0.1;
+            // slightly smaller than the real size (0.06) to allow grip (test, likely needs to be fixed)
+            double width = 0.04;
+            double height = 0.08;
             double depth = 0.04;
             primitive.type = primitive.BOX;
             primitive.dimensions.resize(3);
