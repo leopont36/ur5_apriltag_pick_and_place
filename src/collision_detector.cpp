@@ -1,22 +1,17 @@
-#include "hello_moveit/collision_detector.hpp"
-
+#include "group18_assignment_2/collision_detector.hpp"
 
 CollisionDetector::CollisionDetector() : Node("collision_detector")
 {
         
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-        std::chrono::seconds(2);
 
-        RCLCPP_INFO(this->get_logger(), "Nodo CollisionDetector avviato.");
+        RCLCPP_INFO(this->get_logger(), "CollisionDetector node activated.");
 
         timer_ = this->create_wall_timer(
             std::chrono::seconds(5),
             std::bind(&CollisionDetector::addCollisionBox, this)
         );
-
-
-
 }
     
 void CollisionDetector::addCollisionBox()
@@ -38,10 +33,10 @@ void CollisionDetector::addCollisionBox()
             );
 
             RCLCPP_INFO(this->get_logger(), 
-                "\n--- INFO TRASFORMAZIONE Trovata ---\n"
-                "Frame Padre: %s -> Frame Figlio: %s\n"
-                "Traslazione (metri): [X: %f, Y: %f, Z: %f]\n"
-                "Rotazione (quat):    [X: %.3f, Y: %.3f, Z: %.3f, W: %.3f]",
+                "\n--- INFO TRANSFORMATION Found ---\n"
+                "Parent Frame: %s -> Child Frame: %s\n" 
+                "Translation (meters): [X: %f, Y: %f, Z: %f]\n"
+                "Rotation (quat):    [X: %.3f, Y: %.3f, Z: %.3f, W: %.3f]",
                 frame_cube_2.header.frame_id.c_str(),
                 frame_cube_2.child_frame_id.c_str(),
                 frame_cube_1.transform.translation.x,
@@ -55,9 +50,10 @@ void CollisionDetector::addCollisionBox()
 
 
             shape_msgs::msg::SolidPrimitive primitive;
-            double width = 0.06 ;
-            double height = 0.1;
-            double depth = 0.06;
+            // slightly smaller than the real size (0.06) to allow grip (test, likely needs to be fixed)
+            double width = 0.04;
+            double height = 0.08;
+            double depth = 0.04;
             primitive.type = primitive.BOX;
             primitive.dimensions.resize(3);
             primitive.dimensions[primitive.BOX_X] = width;
@@ -101,14 +97,11 @@ void CollisionDetector::addCollisionBox()
         }
         catch (const tf2::TransformException & ex)
         {
-            RCLCPP_WARN(this->get_logger(), "Impossibile trovare la trasformazione: %s", ex.what());
+            RCLCPP_WARN(this->get_logger(), "Could not find transform: %s", ex.what());
             return;
         }
 
 }
-
-
-
 
 int main(int argc, char * argv[])
 {

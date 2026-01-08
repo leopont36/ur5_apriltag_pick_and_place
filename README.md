@@ -10,3 +10,8 @@
   cd ..
   colcon build --packages-select group18_assignment_2
   ```
+3. Run launch file:
+  ```bash
+  source install/setup.bash
+  ros2 launch group18_assignment_2 group18_assignment_2.launch.py
+  ```

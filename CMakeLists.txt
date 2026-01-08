@@ -19,7 +19,7 @@ find_package(std_srvs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(unique_identifier_msgs REQUIRED)
 
-# Generate custom interfaces
+# generate custom interfaces
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/MoveToPose.action"
   "srv/GripperRequest.srv"
@@ -67,6 +67,16 @@ ament_target_dependencies(swap_coordinator
 )   
 target_link_libraries(swap_coordinator "${cpp_typesupport_target}") 
 
+add_executable(collision_detector src/collision_detector.cpp)
+ament_target_dependencies(collision_detector
+  rclcpp
+  tf2_ros
+  tf2_geometry_msgs
+  moveit_ros_planning_interface
+  geometry_msgs
+)   
+target_link_libraries(collision_detector "${cpp_typesupport_target}")
+
 
 install(DIRECTORY launch/
   DESTINATION share/${PROJECT_NAME}/launch
@@ -80,6 +90,7 @@ install(TARGETS
   motion_planner
   gripper_node
   swap_coordinator
+  collision_detector
   DESTINATION lib/${PROJECT_NAME}
 )
 

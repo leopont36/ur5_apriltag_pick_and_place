@@ -13,13 +13,13 @@ class GripperNode : public rclcpp::Node
 {
 public:
     GripperNode();
-    void init_moveit();
 
 private:
     /**
      * @brief Service callback
      * It receives open or close commands and executes them using MoveIt
      */
+    void init_moveit();
     void handle_gripper_command(
         const std::shared_ptr<group18_assignment_2::srv::GripperRequest::Request> request,
         std::shared_ptr<group18_assignment_2::srv::GripperRequest::Response> response);

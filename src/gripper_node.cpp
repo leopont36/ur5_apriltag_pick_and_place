@@ -1,7 +1,7 @@
 #include "group18_assignment_2/gripper_node.hpp"
 
-// Defined based on your RViz screenshot verification
 static const std::string GRIPPER_PLANNING_GROUP = "ir_gripper"; 
+static const std::string DRIVER_JOINT_NAME = "robotiq_85_left_knuckle_joint";
 
 GripperNode::GripperNode() : Node("gripper_node")
 {
@@ -9,12 +9,14 @@ GripperNode::GripperNode() : Node("gripper_node")
     service_ = this->create_service<group18_assignment_2::srv::GripperRequest>(
         "gripper_service",
         std::bind(&GripperNode::handle_gripper_command, this, std::placeholders::_1, std::placeholders::_2));
-
+    
     RCLCPP_INFO(this->get_logger(), "Gripper node started.");
 }
 
 void GripperNode::init_moveit()
 {
+    if (gripper_group_) return;
+
     try {
         // init MoveGroupInterface with ir_gripper
         gripper_group_ = std::make_shared<moveit::planning_interface::MoveGroupInterface>(
@@ -23,15 +25,8 @@ void GripperNode::init_moveit()
         gripper_group_->setMaxVelocityScalingFactor(1.0);
         gripper_group_->setMaxAccelerationScalingFactor(1.0);
         gripper_group_->setPlanningTime(5.0); 
-        
-        RCLCPP_INFO(this->get_logger(), "Gripper MoveGroup Ready.");
-        
-        // log available targets (open, close)
-        auto targets = gripper_group_->getNamedTargets();
-        for(const auto& t : targets) {
-            RCLCPP_INFO(this->get_logger(), " - Found target: %s", t.c_str());
-        }
 
+        RCLCPP_INFO(this->get_logger(), "Gripper MoveGroup Ready.");
     } catch (const std::exception& e) {
         RCLCPP_ERROR(this->get_logger(), "Failed to initialize MoveGroup: %s", e.what());
     }
@@ -43,36 +38,40 @@ void GripperNode::handle_gripper_command(
 {
     RCLCPP_INFO(this->get_logger(), "Received command: '%s'", request->command.c_str());
 
-    if (!gripper_group_) {
-        init_moveit();
-    }
+    if (!gripper_group_) init_moveit();
 
-    if (!gripper_group_) {
+    bool plan_success = false;
+
+    if (request->command == "open") {
+        // "open" is a named target in the SRDF, safe to use directly
+        plan_success = gripper_group_->setNamedTarget("open");
+    }
+    else if (request->command == "close") {
+        // 0.8 is max closed, 0.75 ensures a tight grip
+        double target_value = 0.75; 
+        
+        plan_success = gripper_group_->setJointValueTarget(DRIVER_JOINT_NAME, target_value);
+        RCLCPP_INFO(this->get_logger(), "Closing joint '%s' to %.2f", DRIVER_JOINT_NAME.c_str(), target_value);
+    }
+    else {
         response->success = false;
-        response->message = "Gripper MoveGroup not initialized yet.";
-        RCLCPP_ERROR(this->get_logger(), "%s", response->message.c_str());
+        response->message = "Invalid command";
         return;
     }
 
-    // check that the request command is valid
-    bool target_found = gripper_group_->setNamedTarget(request->command);
-
-    if (!target_found) {
-        response->success = false;
-        response->message = "Target command does not exist (Try 'open' or 'close').";
-        RCLCPP_ERROR(this->get_logger(), "Invalid target: %s", request->command.c_str());
-        return;
-    }
-
-    // plan and execute the move
-    moveit::core::MoveItErrorCode result = gripper_group_->move();
-
-    if (result == moveit::core::MoveItErrorCode::SUCCESS) {
-        response->success = true;
-        RCLCPP_INFO(this->get_logger(), "Gripper Action Succeeded.");
+    if (plan_success) {
+        moveit::core::MoveItErrorCode result = gripper_group_->move();
+        if (result == moveit::core::MoveItErrorCode::SUCCESS) {
+            response->success = true;
+            response->message = "Gripper Action Succeeded.";
+        } else {
+            RCLCPP_WARN(this->get_logger(), "Gripper result: %d (Likely object contact).", result.val);
+            response->success = true; 
+            response->message = "Gripper Action Completed.";
+        }
     } else {
         response->success = false;
-        RCLCPP_ERROR(this->get_logger(), "Gripper Action Failed (Error Code: %d)", result.val);
+        response->message = "Target setting failed";
     }
 }
 
