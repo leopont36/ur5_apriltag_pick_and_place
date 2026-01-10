@@ -66,55 +66,39 @@ bool SwapCoordinator::getGraspPose(const std::string& tag_frame, geometry_msgs::
     try {
         RCLCPP_INFO(this->get_logger(), "Computing grasp pose for %s", tag_frame.c_str());
         
-        // wait for transform to be available
-        rclcpp::Time now = this->get_clock()->now();
-        // Use TimePointZero to get latest transform available without strict time sync issues
-        if (!tf_buffer_->canTransform("base_link", tag_frame, tf2::TimePointZero, 
-            std::chrono::seconds(20))) {
+        if (!tf_buffer_->canTransform(
+            "base_link", tag_frame, tf2::TimePointZero, std::chrono::seconds(20))) 
+        {
             RCLCPP_ERROR(this->get_logger(), 
                 "Transform not available for %s after 20s", tag_frame.c_str());
             return false;
         }
         
-        // read the transform of the tag
-        auto tag_tf = tf_buffer_->lookupTransform("base_link", tag_frame, 
-            tf2::TimePointZero);
+        auto tag_tf = tf_buffer_->lookupTransform("base_link", tag_frame, tf2::TimePointZero);
+        
+        // tag pose
+        double tag_x = tag_tf.transform.translation.x;
+        double tag_y = tag_tf.transform.translation.y;
+        double tag_z = tag_tf.transform.translation.z - 0.05;
+        
+        // calculate the angle to face the tag
+        double yaw = std::atan2(tag_y, tag_x) ; 
+        
+        double offset = 0.2;
+        grasp_pose.pose.position.x = tag_x - offset * std::cos(yaw);
+        grasp_pose.pose.position.y = tag_y - offset * std::sin(yaw);
+        grasp_pose.pose.position.z = tag_z;
+        
+        tf2::Quaternion q;
+        q.setRPY(-M_PI/2, M_PI, yaw - M_PI/2); 
+        grasp_pose.pose.orientation = tf2::toMsg(q);
         
         grasp_pose.header.frame_id = "base_link";
-        grasp_pose.header.stamp = tag_tf.header.stamp;
-
-        // Tuning offsets to align physics with planning
-        double offset_x = 0.02;
-        double offset_y = 0;
-        double offset_z = 0;
+        grasp_pose.header.stamp = this->now();
         
-        grasp_pose.pose.position.x = tag_tf.transform.translation.x + offset_x;
-        grasp_pose.pose.position.y = tag_tf.transform.translation.y + offset_y;
-        grasp_pose.pose.position.z = tag_tf.transform.translation.z + offset_z;
-
-        // Obtain the tag's orientation
-        tf2::Quaternion tag_quat(
-            tag_tf.transform.rotation.x,
-            tag_tf.transform.rotation.y,
-            tag_tf.transform.rotation.z,
-            tag_tf.transform.rotation.w
-        );
-        
-        // Rotate the gripper 180° around X to face downwards
-        tf2::Quaternion flip_x;
-        flip_x.setRPY(M_PI, 0, 0);  
-        
-        tf2::Quaternion gripper_quat = tag_quat * flip_x;
-        gripper_quat.normalize();
-        
-        grasp_pose.pose.orientation = tf2::toMsg(gripper_quat);
-        
-        RCLCPP_INFO(this->get_logger(), "Grasp pose: [%.3f, %.3f, %.3f] | quat: [%.2f, %.2f, %.2f, %.2f]",
-            grasp_pose.pose.position.x, grasp_pose.pose.position.y, grasp_pose.pose.position.z, gripper_quat.x(), gripper_quat.y(), gripper_quat.z(), gripper_quat.w());
         return true;
-        
     } catch (const tf2::TransformException& ex) {
-        RCLCPP_ERROR(this->get_logger(), "TF error for %s: %s", tag_frame.c_str(), ex.what());
+        RCLCPP_ERROR(this->get_logger   (), "TF error for %s: %s", tag_frame.c_str(), ex.what());
         return false;
     }
 }
@@ -188,7 +172,7 @@ bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometr
     
     // PICK SEQUENCE
     RCLCPP_INFO(get_logger(), "Approaching (hover)...");
-    if (!moveArmOverTarget(pick, hover_z)) return false;
+    if (!moveArmOverTarget(pick, 0)) return false;
     rclcpp::sleep_for(std::chrono::milliseconds(800));
 
     RCLCPP_INFO(get_logger(), "Closing gripper");

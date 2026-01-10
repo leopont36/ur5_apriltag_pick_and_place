@@ -18,8 +18,12 @@ void MotionPlanner::initializeMoveIt()
     
     move_group_->setMaxVelocityScalingFactor(1.0);
     move_group_->setMaxAccelerationScalingFactor(1.0);
-    move_group_->setPlanningTime(10.0);
+    move_group_->setPlanningTime(20.0);
+    move_group_->setNumPlanningAttempts(10);
 
+    move_group_->setGoalPositionTolerance(0.01);  // 1cm
+    move_group_->setGoalOrientationTolerance(0.1); // ~6°
+    move_group_->setGoalJointTolerance(0.05);
     move_group_->setStartStateToCurrentState();
     
     RCLCPP_INFO(this->get_logger(), "Motion Planner ready");
