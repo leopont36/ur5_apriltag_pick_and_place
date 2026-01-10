@@ -5,9 +5,14 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include "group18_assignment_2/action/move_to_pose.hpp"
 #include "group18_assignment_2/srv/gripper_request.hpp"
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h> 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <thread>
 
 class SwapCoordinator : public rclcpp::Node {
 public:
@@ -20,12 +25,17 @@ public:
 private:
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+    std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+
     rclcpp_action::Client<MoveToPose>::SharedPtr action_client_;
     rclcpp::Client<group18_assignment_2::srv::GripperRequest>::SharedPtr gripper_client_;
 
-    
+    geometry_msgs::msg::PoseStamped computeApproachPose(const geometry_msgs::msg::PoseStamped& target, double dist);
+
     bool getGraspPose(const std::string& tag_frame, geometry_msgs::msg::PoseStamped& grasp_pose);
-    bool moveArmOverTarget(geometry_msgs::msg::PoseStamped pose, double offset_z);
+    
+    bool moveArmOverTarget(geometry_msgs::msg::PoseStamped pose);
+    
     bool controlGripper(const std::string& cmd, const std::string& object_id = "");
     bool pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometry_msgs::msg::PoseStamped place, const std::string& object_id);
 };

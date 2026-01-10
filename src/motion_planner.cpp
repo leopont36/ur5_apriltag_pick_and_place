@@ -1,4 +1,5 @@
 #include "group18_assignment_2/motion_planner.hpp"
+#include <moveit/move_group_interface/move_group_interface.hpp> 
 
 MotionPlanner::MotionPlanner() : Node("motion_planner_node")
 {
@@ -18,7 +19,7 @@ void MotionPlanner::initializeMoveIt()
     
     move_group_->setMaxVelocityScalingFactor(1.0);
     move_group_->setMaxAccelerationScalingFactor(1.0);
-    move_group_->setPlanningTime(10.0);
+    move_group_->setPlanningTime(20.0);
 
     move_group_->setStartStateToCurrentState();
     
@@ -68,11 +69,16 @@ void MotionPlanner::execute(const std::shared_ptr<GoalHandle> goal_handle)
     goal_handle->publish_feedback(feedback);
         
     move_group_->setPoseTarget(goal->target_pose);
+    
     auto plan_result = move_group_->plan(plan_);
         
     if (plan_result != moveit::core::MoveItErrorCode::SUCCESS) {
         result->success = false;
-        result->message = "Planning failed";
+        // [FIXED] Use errorCodeToString instead of error_code_to_string
+        result->message = "Planning failed: " + std::string(moveit::core::errorCodeToString(plan_result));
+        
+        RCLCPP_ERROR(this->get_logger(), "%s", result->message.c_str());
+        
         goal_handle->abort(result);
         return;
     }
@@ -82,11 +88,10 @@ void MotionPlanner::execute(const std::shared_ptr<GoalHandle> goal_handle)
     goal_handle->publish_feedback(feedback);
     
     std::atomic<bool> execution_done{false};
-    std::atomic<bool> execution_success{false};
+    moveit::core::MoveItErrorCode exec_code; 
     
-    auto execution_thread = std::thread([this, &execution_done, &execution_success]() {
-        auto exec_result = move_group_->execute(plan_);
-        execution_success = (exec_result == moveit::core::MoveItErrorCode::SUCCESS);
+    auto execution_thread = std::thread([this, &execution_done, &exec_code]() {
+        exec_code = move_group_->execute(plan_);
         execution_done = true;
     });
     
@@ -108,13 +113,14 @@ void MotionPlanner::execute(const std::shared_ptr<GoalHandle> goal_handle)
     execution_thread.join();
     
     // Result
-    if (execution_success) {
+    if (exec_code == moveit::core::MoveItErrorCode::SUCCESS) {
         result->success = true;
         result->message = "Motion completed";
         goal_handle->succeed(result);
     } else {
         result->success = false;
-        result->message = "Execution failed";
+        result->message = "Execution failed: " + std::string(moveit::core::errorCodeToString(exec_code));
+        RCLCPP_ERROR(this->get_logger(), "%s", result->message.c_str());
         goal_handle->abort(result);
     }    
 }

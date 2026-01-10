@@ -1,4 +1,4 @@
-// TO DELETE 
+// TO DELETE
 #include <rclcpp/rclcpp.hpp>
 #include <chrono>
 #include <memory>
@@ -13,28 +13,34 @@ class GripperTestClient : public rclcpp::Node
 public:
     GripperTestClient() : Node("gripper_test_client")
     {
-        // create the client
         client_ = this->create_client<group18_assignment_2::srv::GripperRequest>("gripper_service");
     }
 
     void send_command(std::string cmd)
     {
-        // wait for the service to be available
+        // Wait for service
         while (!client_->wait_for_service(1s)) {
             if (!rclcpp::ok()) {
-                RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
+                RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting. Exiting.");
                 return;
             }
-            RCLCPP_INFO(this->get_logger(), "Service 'gripper_service' not available, waiting again...");
+            RCLCPP_INFO(this->get_logger(), "Waiting for 'gripper_service'...");
         }
 
-        // create and send the request
+        // build request
         auto request = std::make_shared<group18_assignment_2::srv::GripperRequest::Request>();
         request->command = cmd;
-        RCLCPP_INFO(this->get_logger(), "Sending request: '%s'", cmd.c_str());
+        
+
+        if(cmd == "close") {
+            // request->object_id = "box_1"; // Uncomment if testing attachment
+        }
+
+        RCLCPP_INFO(this->get_logger(), "Sending command: '%s'", cmd.c_str());
+        
+        // send async
         auto result_future = client_->async_send_request(request);
 
-        // wait result
         if (rclcpp::spin_until_future_complete(this->get_node_base_interface(), result_future) ==
             rclcpp::FutureReturnCode::SUCCESS)
         {
@@ -45,7 +51,7 @@ public:
                 RCLCPP_ERROR(this->get_logger(), "FAILED. Message: %s", response->message.c_str());
             }
         } else {
-            RCLCPP_ERROR(this->get_logger(), "Failed to call service gripper_service");
+            RCLCPP_ERROR(this->get_logger(), "Service call failed or timed out.");
         }
     }
 
@@ -56,8 +62,18 @@ private:
 int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
+    
+    if (argc < 2) {
+        printf("Usage: ros2 run group18_assignment_2 gripper_test_client [open|close]\n");
+        rclcpp::shutdown();
+        return 1;
+    }
+
+    std::string command = argv[1];
+
     auto node = std::make_shared<GripperTestClient>();
-    node->send_command("open");
+    node->send_command(command);
+
     rclcpp::shutdown();
     return 0;
 }

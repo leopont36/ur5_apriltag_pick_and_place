@@ -94,6 +94,27 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+
+# ... existing targets ...
+
+# 1. Build the Gripper Node (Server)
+
+# 2. Build the Test Client
+add_executable(gripper_test_client src/gripper_test_client.cpp)
+ament_target_dependencies(gripper_test_client 
+  rclcpp 
+)
+# CRITICAL: This allows the client to see "srv/gripper_request.hpp"
+target_link_libraries(gripper_test_client "${cpp_typesupport_target}")
+
+# 3. Install instructions
+install(TARGETS
+  gripper_test_client
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# ... ament_package()
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
