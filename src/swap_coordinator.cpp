@@ -10,7 +10,7 @@ SwapCoordinator::SwapCoordinator() : Node("swap_coordinator_node")
     tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
     
-    // Init Visualizer for debugging
+    // init visualizer for debugging (to delete)
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
     action_client_ = rclcpp_action::create_client<MoveToPose>(this, "move_to_pose");
@@ -19,8 +19,7 @@ SwapCoordinator::SwapCoordinator() : Node("swap_coordinator_node")
     RCLCPP_INFO(this->get_logger(), "Swap Coordinator initialized (RIGOROUS SIDE GRASP MODE)");
 }
 
-// Helper: Calculates the position X meters "backwards" from the target pose
-// Uses the Z-axis of the gripper as the approach vector.
+// calculates the position X meters from the target pose, using the z-axis of the gripper as the approach vector.
 geometry_msgs::msg::PoseStamped SwapCoordinator::computeApproachPose(const geometry_msgs::msg::PoseStamped& target, double dist)
 {
     geometry_msgs::msg::PoseStamped approach = target;
@@ -50,30 +49,25 @@ bool SwapCoordinator::swapTags(const std::string& tag1_frame, const std::string&
         return false;
     }
 
-    // Safety: Ensure gripper is open 
+    // ensure gripper is open 
     controlGripper("open", tag1_frame);
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     geometry_msgs::msg::PoseStamped grasp1, grasp2, temp;
     
-    // Calculate poses using the rigorous getGraspPose function
+    // calculate poses
     if (!getGraspPose(tag1_frame, grasp1)) return false;
     if (!getGraspPose(tag2_frame, grasp2)) return false;
 
-    // --- TEMP POSITION CALCULATION ---
-    // Midpoint between the two tags, but pushed back in Y for safety
-    // We maintain the Z-height and Orientation of grasp2 for consistency
+    // TEMP POSITION (TO FIX)
     temp = grasp2;
-    temp.pose.position.x = (grasp1.pose.position.x + grasp2.pose.position.x) / 2.0;
-    temp.pose.position.y = -0.40; // 40cm back from robot center (safe zone on table)
+    temp.pose.position.x = += 0.15;
 
-    // --- SWAP SEQUENCE ---
 
     RCLCPP_INFO(get_logger(), ">>> PHASE 1: Cube 1 -> Temp");
     if (!pickAndPlace(grasp1, temp, tag1_frame)) return false;
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    // Refreshed grasp2 calculation in case the robot shifted slightly (optional but rigorous)
     if (!getGraspPose(tag2_frame, grasp2)) return false;
 
     RCLCPP_INFO(get_logger(), ">>> PHASE 2: Cube 2 -> Pos 1");
@@ -81,7 +75,6 @@ bool SwapCoordinator::swapTags(const std::string& tag1_frame, const std::string&
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     RCLCPP_INFO(get_logger(), ">>> PHASE 3: Cube 1 -> Pos 2");
-    // Note: temp is a coordinate, not a tracked object, so we don't re-query it
     if (!pickAndPlace(temp, grasp2, tag1_frame)) return false;
 
     RCLCPP_INFO(this->get_logger(), "SWAP COMPLETED SUCCESSFULLY");
@@ -190,7 +183,6 @@ bool SwapCoordinator::moveArmOverTarget(geometry_msgs::msg::PoseStamped pose)
     auto result = result_future.get();
     if (!result.result->success) {
         RCLCPP_WARN(get_logger(), "Move warning/error: %s", result.result->message.c_str());
-        // We return false, but depending on the error, you might want to retry
         return false;
     }
     return true;
@@ -215,10 +207,10 @@ bool SwapCoordinator::controlGripper(const std::string& cmd, const std::string& 
 
 bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometry_msgs::msg::PoseStamped place, const std::string& object_id)
 {
-    // Approach distance: 15cm back from the cube
+    // approach distance: 15cm back from the cube
     double approach_dist = 0.05;
 
-    // Calculate Approach Poses
+    // calculate approach poses
     geometry_msgs::msg::PoseStamped pick_approach = computeApproachPose(pick, approach_dist);
     geometry_msgs::msg::PoseStamped place_approach = computeApproachPose(place, approach_dist);
 
