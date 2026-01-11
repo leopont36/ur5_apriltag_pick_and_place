@@ -61,7 +61,7 @@ bool SwapCoordinator::swapTags(const std::string& tag1_frame, const std::string&
 
     // TEMP POSITION (TO FIX)
     temp = grasp2;
-    temp.pose.position.x = += 0.15;
+    temp.pose.position.x += 0.15;
 
 
     RCLCPP_INFO(get_logger(), ">>> PHASE 1: Cube 1 -> Temp");
@@ -101,7 +101,7 @@ bool SwapCoordinator::getGraspPose(const std::string& tag_frame, geometry_msgs::
 
         tf2::Quaternion final_q;
         // orientation aligned with yaw, with gripper orizontal
-        final_q.setRPY(-M_PI_2, 0, yaw);
+        final_q.setRPY(-M_PI/2, M_PI, yaw);
         final_q.normalize();
 
         // gripper length offset (wrt arm)
@@ -114,7 +114,7 @@ bool SwapCoordinator::getGraspPose(const std::string& tag_frame, geometry_msgs::
 
         double offset_x = 0.0; 
         double offset_y = 0.0;
-        double offset_z = 0.0; //????
+        double offset_z = - 0.05; //????
         
         if (tag_frame == "tag36h11:1") { // RED CUBE 
             offset_x = 0.0302; 
@@ -196,7 +196,7 @@ bool SwapCoordinator::controlGripper(const std::string& cmd, const std::string& 
     req->object_id = object_id;
         
     auto future = gripper_client_->async_send_request(req);
-    if (future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+    if (future.wait_for(std::chrono::seconds(15)) != std::future_status::ready) {
         RCLCPP_ERROR(get_logger(), "Gripper service failed/timeout");
         return false;
     }
@@ -208,7 +208,7 @@ bool SwapCoordinator::controlGripper(const std::string& cmd, const std::string& 
 bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometry_msgs::msg::PoseStamped place, const std::string& object_id)
 {
     // approach distance: 15cm back from the cube
-    double approach_dist = 0.05;
+    double approach_dist = 0.10;
 
     // calculate approach poses
     geometry_msgs::msg::PoseStamped pick_approach = computeApproachPose(pick, approach_dist);
