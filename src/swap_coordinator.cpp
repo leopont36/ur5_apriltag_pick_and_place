@@ -60,9 +60,10 @@ bool SwapCoordinator::swapTags(const std::string& tag1_frame, const std::string&
     if (!getGraspPose(tag2_frame, grasp2)) return false;
 
     // TEMP POSITION (TO FIX)
-    temp = grasp2;
-    temp.pose.position.x += 0.15;
 
+    temp = grasp1;
+    temp.pose.position.y += 0.15;
+    temp.pose.position.x -= 0.05;
 
     RCLCPP_INFO(get_logger(), ">>> PHASE 1: Cube 1 -> Temp");
     if (!pickAndPlace(grasp1, temp, tag1_frame)) return false;
@@ -90,18 +91,11 @@ bool SwapCoordinator::getGraspPose(const std::string& tag_frame, geometry_msgs::
         }
         
         auto tag_tf = tf_buffer_->lookupTransform("base_link", tag_frame, tf2::TimePointZero);
-        
-        
-        tf2::Quaternion tag_quat(
-            tag_tf.transform.rotation.x, tag_tf.transform.rotation.y,
-            tag_tf.transform.rotation.z, tag_tf.transform.rotation.w);
-        
-        double roll, pitch, yaw;
-        tf2::Matrix3x3(tag_quat).getRPY(roll, pitch, yaw);
 
         tf2::Quaternion final_q;
+        double yaw = std::atan2(tag_tf.transform.translation.y, tag_tf.transform.translation.x); 
         // orientation aligned with yaw, with gripper orizontal
-        final_q.setRPY(-M_PI/2, M_PI, yaw);
+        final_q.setRPY(-M_PI/2, M_PI, yaw-M_PI/2);
         final_q.normalize();
 
         // gripper length offset (wrt arm)
@@ -235,7 +229,9 @@ bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometr
 
     // PLACE
     RCLCPP_INFO(get_logger(), "[PLACE] Moving to Approach...");
-    if (!moveArmOverTarget(place_approach)) return false;
+
+    //if (!moveArmOverTarget(place_approach, true)) return false;
+
 
     RCLCPP_INFO(get_logger(), "[PLACE] Placing...");
     if (!moveArmOverTarget(place)) return false;
@@ -246,6 +242,9 @@ bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometr
 
     RCLCPP_INFO(get_logger(), "[PLACE] Retreating...");
     if (!moveArmOverTarget(place_approach)) return false;
+
+    place_approach.pose.position.z += lift_height;
+    if (!moveArmOverTarget(place_approach, false)) return false;
 
     return true;
 }
