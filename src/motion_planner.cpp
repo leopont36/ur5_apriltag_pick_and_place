@@ -1,5 +1,6 @@
 #include "group18_assignment_2/motion_planner.hpp"
 #include <moveit/move_group_interface/move_group_interface.hpp> 
+#include <cmath> // For M_PI_2
 
 MotionPlanner::MotionPlanner() : Node("motion_planner_node")
 {
@@ -19,7 +20,11 @@ void MotionPlanner::initializeMoveIt()
     
     move_group_->setMaxVelocityScalingFactor(1.0);
     move_group_->setMaxAccelerationScalingFactor(1.0);
-    move_group_->setPlanningTime(20.0);
+    move_group_->setPlanningTime(30.0);
+    move_group_->setNumPlanningAttempts(15);
+
+    move_group_->setGoalOrientationTolerance(0.01);
+    move_group_->setGoalPositionTolerance(0.005); 
 
     move_group_->setStartStateToCurrentState();
     
@@ -67,16 +72,41 @@ void MotionPlanner::execute(const std::shared_ptr<GoalHandle> goal_handle)
     // Planning
     feedback->status = "Planning trajectory...";
     goal_handle->publish_feedback(feedback);
-        
+
     move_group_->setPoseTarget(goal->target_pose);
     
-    auto plan_result = move_group_->plan(plan_);
+    if (goal->constrain_orientation) {
+        RCLCPP_INFO(this->get_logger(), "Enforcing Upright Constraints");
+
+        moveit_msgs::msg::Constraints path_constraints;
+        moveit_msgs::msg::OrientationConstraint ocm;
         
+        ocm.link_name = move_group_->getEndEffectorLink();
+        ocm.header.frame_id = "base_link"; 
+        
+        ocm.orientation = move_group_->getCurrentPose().pose.orientation;
+        
+        ocm.absolute_x_axis_tolerance = M_PI; 
+        ocm.absolute_y_axis_tolerance = M_PI; 
+        ocm.absolute_z_axis_tolerance = M_PI;
+        ocm.weight = 1.0;
+        
+        path_constraints.orientation_constraints.push_back(ocm);
+        move_group_->setPathConstraints(path_constraints);
+        
+        move_group_->setPlanningTime(20.0);
+    }
+    else {
+        move_group_->clearPathConstraints();
+        move_group_->setPlanningTime(10.0); // Standard time
+    } 
+
+    auto plan_result = move_group_->plan(plan_);
+    move_group_->clearPathConstraints(); 
+
     if (plan_result != moveit::core::MoveItErrorCode::SUCCESS) {
         result->success = false;
-        // [FIXED] Use errorCodeToString instead of error_code_to_string
         result->message = "Planning failed: " + std::string(moveit::core::errorCodeToString(plan_result));
-        
         RCLCPP_ERROR(this->get_logger(), "%s", result->message.c_str());
         
         goal_handle->abort(result);
@@ -129,7 +159,6 @@ int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<MotionPlanner>();
     
-    // Initialize MoveIt after node creation
     node->initializeMoveIt();
 
     rclcpp::spin(node);

@@ -1,0 +1,10 @@
+# Goal
+string command      # "open" o "close"
+string object_id    # opzionale, per logging
+---
+# Result
+bool success
+string message
+---
+# Feedback
+string status

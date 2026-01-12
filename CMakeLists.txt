@@ -22,6 +22,7 @@ find_package(unique_identifier_msgs REQUIRED)
 # generate custom interfaces
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/MoveToPose.action"
+  "action/Gripper.action"
   "srv/GripperRequest.srv"
   DEPENDENCIES geometry_msgs action_msgs unique_identifier_msgs
 )
