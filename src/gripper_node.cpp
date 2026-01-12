@@ -1,4 +1,6 @@
 #include "group18_assignment_2/gripper_node.hpp"
+#include <moveit/planning_scene_monitor/planning_scene_monitor.h>
+#include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 static const std::string GRIPPER_PLANNING_GROUP = "ir_gripper"; 
 static const std::string DRIVER_JOINT_NAME = "robotiq_85_left_knuckle_joint";
@@ -24,8 +26,25 @@ void GripperNode::init_moveit()
         
         gripper_group_->setMaxVelocityScalingFactor(1.0);
         gripper_group_->setMaxAccelerationScalingFactor(1.0);
+
+        moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+        
+        std::vector<moveit_msgs::msg::CollisionObject> collision_objects;
+        
+        std::vector<std::string> gripper_links = {
+            "tool0",
+            "ur_to_robotiq_link", 
+            "gripper_mount_link",
+            "robotiq_85_base_link",
+            "robotiq_85_left_knuckle_link",
+            "robotiq_85_right_knuckle_link",
+            "robotiq_85_left_finger_link",
+            "robotiq_85_right_finger_link"
+        };
         
         RCLCPP_INFO(this->get_logger(), "Gripper MoveGroup initialized.");
+        RCLCPP_WARN(this->get_logger(), "Note: Gripper collision disabling requires SRDF modification for full effect.");
+        
     } catch (const std::exception& e) {
         RCLCPP_ERROR(this->get_logger(), "MoveIt init failed: %s", e.what());
     }
@@ -51,7 +70,6 @@ rclcpp_action::CancelResponse GripperNode::handle_cancel(
 
 void GripperNode::handle_accepted(const std::shared_ptr<GoalHandleGripper> goal_handle)
 {
-    // Execute in a separate thread so we don't block the executor
     std::thread{std::bind(&GripperNode::execute, this, std::placeholders::_1), goal_handle}.detach();
 }
 
@@ -80,11 +98,6 @@ void GripperNode::execute(const std::shared_ptr<GoalHandleGripper> goal_handle)
             result->message = "Apertura completata";
             goal_handle->succeed(result);
             RCLCPP_INFO(this->get_logger(), "OPEN finita pulita.");
-
-            /*if(!goal->object_id.empty()) {
-                RCLCPP_INFO(this->get_logger(), "Detaching object '%s' from gripper.", goal->object_id.c_str());
-                gripper_group_->detachObject(goal->object_id);
-            }*/
         } else {
             result->success = false;
             result->message = "Errore apertura MoveIt";
@@ -100,13 +113,6 @@ void GripperNode::execute(const std::shared_ptr<GoalHandleGripper> goal_handle)
             result->success = false;
             result->message = "Target close non valido";
             goal_handle->abort(result);
-
-            /*if(!goal->object_id.empty()) {
-                RCLCPP_INFO(this->get_logger(), "Attaching object '%s' to gripper.", goal->object_id.c_str());
-                gripper_group_->attachObject(goal->object_id, "tool0", gripper_group_->getLinkNames());
-            }*/
-
-            return;
         }
 
         gripper_group_->asyncMove();
@@ -130,8 +136,6 @@ void GripperNode::execute(const std::shared_ptr<GoalHandleGripper> goal_handle)
 int main(int argc, char** argv) {
     rclcpp::init(argc, argv);
     auto node = std::make_shared<GripperNode>();
-    
-    // MultiThreadedExecutor is best for Actions
     rclcpp::executors::MultiThreadedExecutor executor;
     executor.add_node(node);
     executor.spin();

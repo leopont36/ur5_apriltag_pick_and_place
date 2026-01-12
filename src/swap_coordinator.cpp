@@ -1,9 +1,4 @@
 #include "group18_assignment_2/swap_coordinator.hpp"
-#include <tf2/LinearMath/Quaternion.h>
-#include <tf2/LinearMath/Matrix3x3.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#include <thread>
-#include <cmath> // For M_PI_2
 
 SwapCoordinator::SwapCoordinator() : Node("swap_coordinator_node")
 {
@@ -50,7 +45,7 @@ bool SwapCoordinator::swapTags(const std::string& tag1_frame, const std::string&
     }
 
     // ensure gripper is open 
-    controlGripper("open", tag1_frame);
+    controlGripper("open");
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     geometry_msgs::msg::PoseStamped grasp1, grasp2, temp;
@@ -59,24 +54,26 @@ bool SwapCoordinator::swapTags(const std::string& tag1_frame, const std::string&
     if (!getGraspPose(tag1_frame, grasp1)) return false;
     if (!getGraspPose(tag2_frame, grasp2)) return false;
 
-    // TEMP POSITION (TO FIX)
+    // TEMP POSITION 
     temp = grasp1;
-    temp.pose.position.y += 0.15;
-    temp.pose.position.x -= 0.05;
+    temp.pose.position.y -= 0.15;
+    
 
 
     RCLCPP_INFO(get_logger(), ">>> PHASE 1: Cube 1 -> Temp");
-    if (!pickAndPlace(grasp1, temp, tag1_frame)) return false;
+    if (!pickAndPlace(grasp1, temp)) return false;
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     if (!getGraspPose(tag2_frame, grasp2)) return false;
 
     RCLCPP_INFO(get_logger(), ">>> PHASE 2: Cube 2 -> Pos 1");
-    if (!pickAndPlace(grasp2, grasp1, tag2_frame)) return false;
+    if (!pickAndPlace(grasp2, grasp1)) return false;
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     RCLCPP_INFO(get_logger(), ">>> PHASE 3: Cube 1 -> Pos 2");
-    if (!pickAndPlace(temp, grasp2, tag1_frame)) return false;
+    if (!pickAndPlace(temp, grasp2)) return false;
+    controlGripper("close");
+    moveArmOverTarget(temp, false, "FINISH"); //pose and constraints not relevant here
 
     RCLCPP_INFO(this->get_logger(), "SWAP COMPLETED SUCCESSFULLY");
     return true;
@@ -108,7 +105,7 @@ bool SwapCoordinator::getGraspPose(const std::string& tag_frame, geometry_msgs::
 
         double offset_x = 0.0; 
         double offset_y = 0.0;
-        double offset_z = - 0.05; //????
+        double offset_z = - 0.05; 
         
         if (tag_frame == "tag36h11:1") { // RED CUBE 
             offset_x = 0.0302; 
@@ -152,16 +149,17 @@ bool SwapCoordinator::getGraspPose(const std::string& tag_frame, geometry_msgs::
     }
 }
 
-bool SwapCoordinator::moveArmOverTarget(geometry_msgs::msg::PoseStamped pose, bool orientation)
+bool SwapCoordinator::moveArmOverTarget(geometry_msgs::msg::PoseStamped pose, bool orientation, std::string message)
 {
     auto goal = MoveToPose::Goal();
     goal.target_pose = pose;
     goal.constrain_orientation = orientation;
+    goal.message = message;
     
     auto send_opts = rclcpp_action::Client<MoveToPose>::SendGoalOptions();
     auto goal_future = action_client_->async_send_goal(goal, send_opts);
     
-    if (goal_future.wait_for(std::chrono::seconds(20)) != std::future_status::ready) {
+    if (goal_future.wait_for(std::chrono::seconds(30)) != std::future_status::ready) {
         RCLCPP_ERROR(get_logger(), "Move action server timed out");
         return false;
     }
@@ -173,7 +171,8 @@ bool SwapCoordinator::moveArmOverTarget(geometry_msgs::msg::PoseStamped pose, bo
     }
     
     auto result_future = action_client_->async_get_result(goal_handle);
-    if (result_future.wait_for(std::chrono::seconds(30)) != std::future_status::ready) return false;
+    if (result_future.wait_for(std::chrono::seconds(60)) != std::future_status::ready) 
+        return false;
     
     auto result = result_future.get();
     if (!result.result->success) {
@@ -183,7 +182,7 @@ bool SwapCoordinator::moveArmOverTarget(geometry_msgs::msg::PoseStamped pose, bo
     return true;
 }
 
-bool SwapCoordinator::controlGripper(const std::string& cmd, const std::string& object_id)
+bool SwapCoordinator::controlGripper(const std::string& cmd)
 {
     RCLCPP_INFO(get_logger(), "Action Gripper: %s", cmd.c_str());
 
@@ -194,8 +193,7 @@ bool SwapCoordinator::controlGripper(const std::string& cmd, const std::string& 
 
     auto goal_msg = GripperAction::Goal();
     goal_msg.command = cmd;
-    // goal_msg.object_id = object_id; // Uncomment if your action file has this field
-
+    
     auto send_goal_options = rclcpp_action::Client<GripperAction>::SendGoalOptions();
     auto future_goal_handle = gripper_action_client_->async_send_goal(goal_msg, send_goal_options);
 
@@ -212,7 +210,7 @@ bool SwapCoordinator::controlGripper(const std::string& cmd, const std::string& 
 
     auto result_future = gripper_action_client_->async_get_result(goal_handle);
 
-    // Wait 10s for the action to complete (MoveIt + physics)
+    // Wait 10s for the action to complete
     if (result_future.wait_for(std::chrono::seconds(15)) != std::future_status::ready) {
         RCLCPP_ERROR(get_logger(), "Action result timeout");
         return false;
@@ -230,7 +228,7 @@ bool SwapCoordinator::controlGripper(const std::string& cmd, const std::string& 
     return false;
 }
 
-bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometry_msgs::msg::PoseStamped place, const std::string& object_id)
+bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometry_msgs::msg::PoseStamped place)
 {
     // setup distances
     double approach_dist = 0.10; // 10cm back from the cube
@@ -240,13 +238,13 @@ bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometr
     geometry_msgs::msg::PoseStamped pick_approach = computeApproachPose(pick, approach_dist);
     geometry_msgs::msg::PoseStamped place_approach = computeApproachPose(place, approach_dist);
 
+    bool set_constraint = pick.pose.orientation.w != place.pose.orientation.w;
+
     // lifted poses
     geometry_msgs::msg::PoseStamped pick_lift = pick;
     pick_lift.pose.position.z += lift_height;
 
-    // TO DO FIX POS TO PLACE
-
-    controlGripper("open", object_id);
+    controlGripper("open");
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     // PICK SEQUENCE
@@ -259,23 +257,20 @@ bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometr
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     RCLCPP_INFO(get_logger(), "[PICK] Closing Gripper...");
-    if (!controlGripper("close", object_id)) return false;
+    if (!controlGripper("close")) return false;
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     RCLCPP_INFO(get_logger(), "[PICK] Lifting Object...");
-    if (!moveArmOverTarget(pick_lift, true)) return false;
+    if (!moveArmOverTarget(pick_lift, false)) return false;
 
     // PLACE SEQUENCE 
     std::this_thread::sleep_for(std::chrono::seconds(1));
-    
-    RCLCPP_INFO(get_logger(), "[PLACE] Moving to Approach...");
-    //if (!moveArmOverTarget(place_approach, true)) return false;
 
     RCLCPP_INFO(get_logger(), "[PLACE] Placing...");
-    if (!moveArmOverTarget(place, true)) return false;
+    if (!moveArmOverTarget(place, set_constraint)) return false;
 
     RCLCPP_INFO(get_logger(), "[PLACE] Releasing...");
-    if (!controlGripper("open", object_id)) return false;
+    if (!controlGripper("open")) return false;
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     RCLCPP_INFO(get_logger(), "[PLACE] Retreating...");
