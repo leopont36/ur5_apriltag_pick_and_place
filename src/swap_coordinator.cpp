@@ -229,9 +229,7 @@ bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometr
 
     // PLACE
     RCLCPP_INFO(get_logger(), "[PLACE] Moving to Approach...");
-
-    //if (!moveArmOverTarget(place_approach, true)) return false;
-
+    //if (!moveArmOverTarget(place_approach)) return false;
 
     RCLCPP_INFO(get_logger(), "[PLACE] Placing...");
     if (!moveArmOverTarget(place)) return false;
@@ -242,6 +240,9 @@ bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometr
 
     RCLCPP_INFO(get_logger(), "[PLACE] Retreating...");
     if (!moveArmOverTarget(place_approach)) return false;
+
+    place_approach.pose.position.z += lift_height;
+    if (!moveArmOverTarget(place_approach, false)) return false;
 
     place_approach.pose.position.z += lift_height;
     if (!moveArmOverTarget(place_approach, false)) return false;
