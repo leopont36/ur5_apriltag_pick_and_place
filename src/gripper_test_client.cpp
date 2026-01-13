@@ -18,7 +18,7 @@ public:
 
     void send_command(std::string cmd)
     {
-        // Wait for service
+        // wait for service
         while (!client_->wait_for_service(1s)) {
             if (!rclcpp::ok()) {
                 RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting. Exiting.");
