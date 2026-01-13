@@ -1,4 +1,4 @@
-#include "hello_moveit/color_detector.hpp"
+#include "group18_assignment_2/color_detector.hpp"
 
 
 ColorDetectorServer::ColorDetectorServer() : Node("colorDetectorServer")
@@ -12,7 +12,6 @@ ColorDetectorServer::ColorDetectorServer() : Node("colorDetectorServer")
         //Options subscription
         rclcpp::SubscriptionOptions sub_options;
         sub_options.callback_group = camera_group_;
-
 
         //Create the subscription to the camera topic
         camera_subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
