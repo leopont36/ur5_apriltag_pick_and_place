@@ -257,7 +257,7 @@ bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometr
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     RCLCPP_INFO(get_logger(), "[PICK] Closing Gripper...");
-    if (!controlGripper("close")) return false;
+    if (!controlGripper("grasp")) return false;
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     RCLCPP_INFO(get_logger(), "[PICK] Lifting Object...");

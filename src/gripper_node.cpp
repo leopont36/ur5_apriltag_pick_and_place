@@ -43,7 +43,6 @@ void GripperNode::init_moveit()
         };
         
         RCLCPP_INFO(this->get_logger(), "Gripper MoveGroup initialized.");
-        RCLCPP_WARN(this->get_logger(), "Note: Gripper collision disabling requires SRDF modification for full effect.");
         
     } catch (const std::exception& e) {
         RCLCPP_ERROR(this->get_logger(), "MoveIt init failed: %s", e.what());
@@ -81,12 +80,12 @@ void GripperNode::execute(const std::shared_ptr<GoalHandleGripper> goal_handle)
     auto result = std::make_shared<GripperAction::Result>();
     
     if (goal->command == "open") {
-        RCLCPP_INFO(this->get_logger(), "Eseguendo OPEN (Standard)...");
+        RCLCPP_INFO(this->get_logger(), "Trying to open ...");
         
         bool setup = gripper_group_->setNamedTarget("open");
         if (!setup) {
             result->success = false;
-            result->message = "Target open non valido";
+            result->message = "Target open not valid";
             goal_handle->abort(result);
             return;
         }
@@ -95,23 +94,23 @@ void GripperNode::execute(const std::shared_ptr<GoalHandleGripper> goal_handle)
         
         if (error_code == moveit::core::MoveItErrorCode::SUCCESS) {
             result->success = true;
-            result->message = "Apertura completata";
+            result->message = "Open completed";
             goal_handle->succeed(result);
-            RCLCPP_INFO(this->get_logger(), "OPEN finita pulita.");
+            RCLCPP_INFO(this->get_logger(), "OPEN finished succesfully.");
         } else {
             result->success = false;
-            result->message = "Errore apertura MoveIt";
+            result->message = "Error open MoveIt";
             goal_handle->abort(result);
         }
         return; 
     }
 
-    else if (goal->command == "close") {
-        RCLCPP_INFO(this->get_logger(), "Eseguendo CLOSE (Forzata 2s)...");
+    else if (goal->command == "grasp") {
+        RCLCPP_INFO(this->get_logger(), "Trying to grasp...");
 
         if (!gripper_group_->setJointValueTarget(DRIVER_JOINT_NAME, 0.75)) {
             result->success = false;
-            result->message = "Target close non valido";
+            result->message = "Target grasp not valid";
             goal_handle->abort(result);
         }
 
@@ -121,14 +120,39 @@ void GripperNode::execute(const std::shared_ptr<GoalHandleGripper> goal_handle)
         gripper_group_->stop();
 
         result->success = true;
-        result->message = "Chiusura forzata (Presa)";
+        result->message = "Grasp Completed";
         goal_handle->succeed(result);
         
-        RCLCPP_INFO(this->get_logger(), "CLOSE forzata completata.");
+        RCLCPP_INFO(this->get_logger(), "GRASP finished succesfully.");
+    }
+    else if (goal->command == "close") {
+        RCLCPP_INFO(this->get_logger(), "Trying to close ...");
+        
+        bool setup = gripper_group_->setNamedTarget("close");
+        if (!setup) {
+            result->success = false;
+            result->message = "Target close not valid";
+            goal_handle->abort(result);
+            return;
+        }
+
+        auto error_code = gripper_group_->move();
+        
+        if (error_code == moveit::core::MoveItErrorCode::SUCCESS) {
+            result->success = true;
+            result->message = "Close completed";
+            goal_handle->succeed(result);
+            RCLCPP_INFO(this->get_logger(), "CLOSE finished succesfully.");
+        } else {
+            result->success = false;
+            result->message = "Error close MoveIt";
+            goal_handle->abort(result);
+        }
+        return; 
     }
     else {
         result->success = false;
-        result->message = "Comando sconosciuto";
+        result->message = "Unknown command";
         goal_handle->abort(result);
     }
 }
