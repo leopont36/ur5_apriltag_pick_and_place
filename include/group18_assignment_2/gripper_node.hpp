@@ -6,6 +6,9 @@
 #include <moveit/move_group_interface/move_group_interface.hpp>
 #include "group18_assignment_2/action/gripper.hpp"
 
+#include <moveit/planning_scene_monitor/planning_scene_monitor.hpp>
+#include <moveit/planning_scene_interface/planning_scene_interface.hpp>
+
 class GripperNode : public rclcpp::Node
 {
 public:
@@ -20,7 +23,7 @@ private:
 
     void init_moveit();
 
-    // Action Callbacks
+    // action Callbacks
     rclcpp_action::GoalResponse handle_goal(
         const rclcpp_action::GoalUUID & uuid,
         std::shared_ptr<const GripperAction::Goal> goal);
@@ -31,7 +34,7 @@ private:
     void handle_accepted(
         const std::shared_ptr<GoalHandleGripper> goal_handle);
 
-    // The actual movement logic
+    // the actual movement logic
     void execute(const std::shared_ptr<GoalHandleGripper> goal_handle);
 };
 
