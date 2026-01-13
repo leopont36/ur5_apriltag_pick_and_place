@@ -23,7 +23,6 @@ find_package(unique_identifier_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/MoveToPose.action"
   "action/Gripper.action"
-  "srv/GripperRequest.srv"
   DEPENDENCIES geometry_msgs action_msgs unique_identifier_msgs
 )
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
@@ -94,27 +93,6 @@ install(TARGETS
   collision_detector
   DESTINATION lib/${PROJECT_NAME}
 )
-
-
-# ... existing targets ...
-
-# 1. Build the Gripper Node (Server)
-
-# 2. Build the Test Client
-add_executable(gripper_test_client src/gripper_test_client.cpp)
-ament_target_dependencies(gripper_test_client 
-  rclcpp 
-)
-# CRITICAL: This allows the client to see "srv/gripper_request.hpp"
-target_link_libraries(gripper_test_client "${cpp_typesupport_target}")
-
-# 3. Install instructions
-install(TARGETS
-  gripper_test_client
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-# ... ament_package()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
