@@ -30,11 +30,6 @@ public:
         // build request
         auto request = std::make_shared<group18_assignment_2::srv::GripperRequest::Request>();
         request->command = cmd;
-        
-
-        if(cmd == "close") {
-            // request->object_id = "box_1"; // Uncomment if testing attachment
-        }
 
         RCLCPP_INFO(this->get_logger(), "Sending command: '%s'", cmd.c_str());
         
