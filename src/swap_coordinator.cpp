@@ -142,7 +142,6 @@ bool SwapCoordinator::getGraspPose(const std::string& tag_frame, geometry_msgs::
         tf_broadcaster_->sendTransform(t);
 
         return true;
-        
     } catch (const tf2::TransformException& ex) {
         RCLCPP_ERROR(this->get_logger(), "TF error: %s", ex.what());
         return false;
