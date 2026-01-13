@@ -1,6 +1,4 @@
 #include "group18_assignment_2/gripper_node.hpp"
-#include <moveit/planning_scene_monitor/planning_scene_monitor.h>
-#include <moveit/planning_scene_interface/planning_scene_interface.h>
 
 static const std::string GRIPPER_PLANNING_GROUP = "ir_gripper"; 
 static const std::string DRIVER_JOINT_NAME = "robotiq_85_left_knuckle_joint";

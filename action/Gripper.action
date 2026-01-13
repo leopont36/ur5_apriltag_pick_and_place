@@ -1,5 +1,5 @@
 # Goal
-string command      # "open" o "close"
+string command # "open", "grasp" or "close"
 ---
 # Result
 bool success
