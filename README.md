@@ -1,5 +1,6 @@
 # Intelligent robotics assignment 2 - group n. 18
 University project to implement a swapping system for the UR5 robot to exchange the positions of two cubes using MoveIt.
+
 Participants:
 - Marco Facco (@marcofacco2001) - ID number: 2140334
 - Leonardo Pontello (@leopont36) - ID number: 2146898
