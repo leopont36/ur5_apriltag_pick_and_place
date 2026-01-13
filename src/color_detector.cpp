@@ -1,6 +1,5 @@
 #include "group18_assignment_2/color_detector.hpp"
 
-
 ColorDetectorServer::ColorDetectorServer() : Node("colorDetectorServer")
 {
         RCLCPP_INFO(this->get_logger(), "Starting Color Detector Node");
@@ -21,6 +20,7 @@ ColorDetectorServer::ColorDetectorServer() : Node("colorDetectorServer")
           sub_options
         );
 
+        //Create the subscription to the camera info
         camera_info_subcription_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
           "/rgb_camera/camera_info", 
           rclcpp::SensorDataQoS(),
@@ -28,13 +28,11 @@ ColorDetectorServer::ColorDetectorServer() : Node("colorDetectorServer")
           sub_options
         );
 
-
         //Create the tf2 subscription
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-
         
-        //Create the service for the node
+        //Create the service
         service=this->create_service<detector_interfaces::srv::ColorDetection>("color_detect",
           [this](const std::shared_ptr<detector_interfaces::srv::ColorDetection::Request> request,
             std::shared_ptr<detector_interfaces::srv::ColorDetection::Response> response) {
@@ -44,17 +42,13 @@ ColorDetectorServer::ColorDetectorServer() : Node("colorDetectorServer")
         rclcpp::ServicesQoS(),
         service_group_
         );
-
 }
-
     
 void ColorDetectorServer::image_callback(const sensor_msgs::msg::Image::SharedPtr msg)
-{
-       
+{   
       rclcpp::sleep_for(std::chrono::seconds(2));
       std::lock_guard<std::mutex> lock(image_mutex_);
       last_msg_ = msg;
-     
 }
 
 void ColorDetectorServer::camera_info_callback(const sensor_msgs::msg::CameraInfo::SharedPtr msg)
@@ -79,8 +73,6 @@ void ColorDetectorServer::camera_info_callback(const sensor_msgs::msg::CameraInf
           has_cam_info=true;
           
         }
-        
-
 }
 
 cv::Point2d ColorDetectorServer::project_points(geometry_msgs::msg::TransformStamped frame,double off_x,double off_y,double off_z)
@@ -110,7 +102,6 @@ cv::Mat ColorDetectorServer::mask_point(cv::Mat& img,cv::Point2d center, int rad
         cv::Mat roi_mat = img(roi_rect); 
 
         return roi_mat;
-
 }
 
 std::string ColorDetectorServer::image_to_color(cv::Mat image)
@@ -125,29 +116,24 @@ std::string ColorDetectorServer::image_to_color(cv::Mat image)
         int H = hsv_val[0];
 
         std::string detected_color;
+        //Red
         if (H < 10 || H > 170) {
-            detected_color = "RED";
-                 
+            detected_color = "RED";       
         }
-            // VERDE (Range: 35-85)
+        //Green
         else if (H >= 35 && H < 85) {
-            detected_color = "GREEN";
-                 
+            detected_color = "GREEN";      
         }
-            // BLU (Range: 90-135)
+        //Blue
         else if (H >= 90 && H <= 135) {
-            detected_color = "BLUE";
-                
+            detected_color = "BLUE";     
         }
-        else {
-                
+        else {    
             detected_color = "COLOR NOT FINDED";
         }
 
         return detected_color;
-
-}
-   
+} 
 
 void ColorDetectorServer::service_callback(const std::shared_ptr<detector_interfaces::srv::ColorDetection::Request> request,
       std::shared_ptr<detector_interfaces::srv::ColorDetection::Response> response)
@@ -176,7 +162,7 @@ void ColorDetectorServer::service_callback(const std::shared_ptr<detector_interf
 
             std::string detected_color=image_to_color(masked);
 
-            RCLCPP_INFO(this->get_logger(),"Il colore è %s",detected_color.c_str());
+            RCLCPP_INFO(this->get_logger(),"DETECTED COLOR: %s",detected_color.c_str());
             
             response->color=detected_color;   
             
@@ -193,8 +179,7 @@ void ColorDetectorServer::service_callback(const std::shared_ptr<detector_interf
             RCLCPP_WARN(this->get_logger(), "CV Bridge Error");
         }
       }
-      
-         
+        
 }
 
 
@@ -202,12 +187,9 @@ int main(int argc, char * argv[])
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<ColorDetectorServer>();
-  
   rclcpp::executors::MultiThreadedExecutor executor;
   executor.add_node(node);
-
   executor.spin();
-
   rclcpp::shutdown();
   return 0;
 }
