@@ -1,5 +1,7 @@
 # Goal
 geometry_msgs/PoseStamped target_pose
+bool constrain_orientation
+string message # for final status message
 ---
 # Result
 bool success

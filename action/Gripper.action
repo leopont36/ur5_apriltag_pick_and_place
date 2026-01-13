@@ -1,0 +1,9 @@
+# Goal
+string command      # "open" o "close"
+---
+# Result
+bool success
+string message
+---
+# Feedback
+string status

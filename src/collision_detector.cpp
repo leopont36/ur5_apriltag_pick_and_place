@@ -1,114 +1,70 @@
 #include "group18_assignment_2/collision_detector.hpp"
+#include <moveit/planning_scene_interface/planning_scene_interface.hpp>
+#include <geometry_msgs/msg/pose.hpp>
+#include <shape_msgs/msg/solid_primitive.hpp>
+#include <thread>
 
 CollisionDetector::CollisionDetector() : Node("collision_detector")
 {
-        
-        tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
-        tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
-
-        RCLCPP_INFO(this->get_logger(), "CollisionDetector node activated.");
-
-        timer_ = this->create_wall_timer(
-            std::chrono::seconds(5),
-            std::bind(&CollisionDetector::addCollisionBox, this)
-        );
+    // Give MoveIt a moment to connect
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    addCollisionTables();
 }
-    
-void CollisionDetector::addCollisionBox()
+
+void CollisionDetector::addCollisionTables()
 {
-
-        try {
-
-            auto frame_cube_1 = tf_buffer_->lookupTransform(
-            FRAME_ID,
-            CUBE_1,
-            tf2::TimePointZero
-            );
+    moveit::planning_interface::PlanningSceneInterface planning_scene_interface;
+    std::vector<moveit_msgs::msg::CollisionObject> collision_objects;
 
 
-            auto frame_cube_2 = tf_buffer_->lookupTransform(
-            FRAME_ID,
-            CUBE_2,
-            tf2::TimePointZero 
-            );
+    double table_w = 0.3; 
+    double table_d = 0.3;
+    double table_h = 0.3;
 
-            RCLCPP_INFO(this->get_logger(), 
-                "\n--- INFO TRANSFORMATION Found ---\n"
-                "Parent Frame: %s -> Child Frame: %s\n" 
-                "Translation (meters): [X: %f, Y: %f, Z: %f]\n"
-                "Rotation (quat):    [X: %.3f, Y: %.3f, Z: %.3f, W: %.3f]",
-                frame_cube_2.header.frame_id.c_str(),
-                frame_cube_2.child_frame_id.c_str(),
-                frame_cube_1.transform.translation.x,
-                frame_cube_1.transform.translation.y,
-                frame_cube_1.transform.translation.z,
-                frame_cube_2.transform.rotation.x,
-                frame_cube_2.transform.rotation.y,
-                frame_cube_2.transform.rotation.z,
-                frame_cube_2.transform.rotation.w
-            );
+    shape_msgs::msg::SolidPrimitive prim;
+    prim.type = prim.BOX;
+    prim.dimensions = {table_w, table_d, table_h};
 
+    // TABLE 1
+    moveit_msgs::msg::CollisionObject t1;
+    t1.header.frame_id = "world";
+    t1.id = "cafe_table";
+    t1.primitives.push_back(prim);
 
-            shape_msgs::msg::SolidPrimitive primitive;
-            // slightly smaller than the real size (0.06) to allow grip (test, likely needs to be fixed)
-            double width = 0.04;
-            double height = 0.08;
-            double depth = 0.04;
-            primitive.type = primitive.BOX;
-            primitive.dimensions.resize(3);
-            primitive.dimensions[primitive.BOX_X] = width;
-            primitive.dimensions[primitive.BOX_Y] = depth;
-            primitive.dimensions[primitive.BOX_Z] = height;
+    geometry_msgs::msg::Pose p1;
+    p1.orientation.w = 1.0;
+    p1.position.x = 4.0;
+    p1.position.y = -1.1;
+    p1.position.z = table_h / 2.0;
+    
+    t1.primitive_poses.push_back(p1);
+    t1.operation = t1.ADD;
+    collision_objects.push_back(t1);
 
-            moveit_msgs::msg::CollisionObject collision_cube_1;
-            collision_cube_1.header.frame_id = FRAME_ID;
-            collision_cube_1.id = CUBE_1;
+    // TABLE 2
+    moveit_msgs::msg::CollisionObject t2;
+    t2.header.frame_id = "world";
+    t2.id = "cafe_table2";
+    t2.primitives.push_back(prim);
 
-            geometry_msgs::msg::Pose pose_cube_1;
-            pose_cube_1.orientation.w = 1.0;
-            pose_cube_1.position.x = frame_cube_1.transform.translation.x;
-            pose_cube_1.position.y = frame_cube_1.transform.translation.y;//frame_cube_1.transform.translation.y;
-            pose_cube_1.position.z = frame_cube_1.transform.translation.z -(height/2);//frame_cube_1.transform.rotation.z - 0.05;
+    geometry_msgs::msg::Pose p2;
+    p2.orientation.w = 1.0;
+    p2.position.x = 4.6;  // Approx center based on Tag 10
+    p2.position.y = -0.5; // Approx center based on Tag 10
+    p2.position.z = table_h / 2.0; 
 
-            collision_cube_1.primitives.push_back(primitive);
-            collision_cube_1.primitive_poses.push_back(pose_cube_1);
-            collision_cube_1.operation = collision_cube_1.ADD;
-            
-            planning_scene_interface.applyCollisionObject(collision_cube_1);
+    t2.primitive_poses.push_back(p2);
+    t2.operation = t2.ADD;
+    collision_objects.push_back(t2);
 
-
-            moveit_msgs::msg::CollisionObject collision_cube_2;
-            collision_cube_2.header.frame_id = FRAME_ID;
-            collision_cube_2.id = CUBE_2;
-
-            geometry_msgs::msg::Pose pose_cube_2;
-            pose_cube_2.orientation.w = 1.0;
-            pose_cube_2.position.x = frame_cube_2.transform.translation.x;
-            pose_cube_2.position.y = frame_cube_2.transform.translation.y;
-            pose_cube_2.position.z = frame_cube_2.transform.translation.z -(height/2);
-
-            collision_cube_2.primitives.push_back(primitive);
-            collision_cube_2.primitive_poses.push_back(pose_cube_2);
-            collision_cube_2.operation = collision_cube_2.ADD;
-
-            planning_scene_interface.applyCollisionObject(collision_cube_2);
-
-
-        }
-        catch (const tf2::TransformException & ex)
-        {
-            RCLCPP_WARN(this->get_logger(), "Could not find transform: %s", ex.what());
-            return;
-        }
-
+    planning_scene_interface.applyCollisionObjects(collision_objects);
+    RCLCPP_INFO(this->get_logger(), "Hardcoded collision objects added!");
 }
 
 int main(int argc, char * argv[])
 {
     rclcpp::init(argc, argv);
-
     auto node = std::make_shared<CollisionDetector>();
-
     rclcpp::spin(node);
     rclcpp::shutdown();
     return 0;
