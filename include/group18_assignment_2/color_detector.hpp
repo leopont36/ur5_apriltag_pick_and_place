@@ -1,15 +1,19 @@
+#ifndef COLOR_DETECTOR_HPP_
+#define COLOR_DETECTOR_HPP_
+
+//Standard
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "detector_interfaces/srv/color_detection.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/camera_info.hpp"
 
-//TF2 Headers
+//TF2
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-//OpenCV Headers
+//OpenCV
 #include <cv_bridge/cv_bridge.hpp>
 #include <opencv2/opencv.hpp>
 
@@ -17,7 +21,10 @@
 /**
  * @brief This node is responsable to identify the color of the cube
  * given it's position from the AprilTag Node. This method work as 
- * a service Server, providing in output the color of the requested cube
+ * a Service Server, providing in output the color of the requested cube
+ * to the Client through a specific service request. The node utilizes 
+ * distinct CallableGroup for the camera and the service, to ensure
+ * concurrency and responsiveness.
  */
 class ColorDetectorServer : public rclcpp::Node
 {
@@ -39,12 +46,16 @@ class ColorDetectorServer : public rclcpp::Node
         rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr camera_subscription_;
         rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_subcription_;
 
-        
+        //Service
         rclcpp::Service<detector_interfaces::srv::ColorDetection>::SharedPtr service;
-        sensor_msgs::msg::Image::SharedPtr last_msg_;
+
+        //TF2
         std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
         std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+
+        //Image
         cv::Mat current_image_;
+        sensor_msgs::msg::Image::SharedPtr last_msg_;
 
         // CallBack group
         rclcpp::CallbackGroup::SharedPtr service_group_;
@@ -86,8 +97,6 @@ class ColorDetectorServer : public rclcpp::Node
         void camera_info_callback(const sensor_msgs::msg::CameraInfo::SharedPtr msg);
 
 
-
-
         /**
         * @brief Projects a 3D point of the cube onto the 2D image plane of the camera.
         *
@@ -116,6 +125,7 @@ class ColorDetectorServer : public rclcpp::Node
         * @return cv::Mat A small image matrix containing only the region of interest.
         */
         cv::Mat mask_point(cv::Mat& img,cv::Point2d center, int radius);
+
 
         /**
         * @brief Identifies the color on a specific mask image received in input
