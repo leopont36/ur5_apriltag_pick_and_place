@@ -325,8 +325,8 @@ int main(int argc, char** argv)
     RCLCPP_INFO(node->get_logger(), "Waiting for TF buffer to fill...");
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
-    std::string tag1 = "tag36h11:1";
-    std::string tag2 = "tag36h11:10";
+    std::string tag1 = "tag36h11:10";
+    std::string tag2 = "tag36h11:1";
     
     if (node->swapTags(tag1, tag2)) 
     {
