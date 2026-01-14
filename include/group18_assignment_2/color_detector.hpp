@@ -4,7 +4,7 @@
 //Standard
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "detector_interfaces/srv/color_detection.hpp"
+#include "group18_assignment_2/srv/color_detection.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "sensor_msgs/msg/camera_info.hpp"
 
@@ -47,7 +47,7 @@ class ColorDetectorServer : public rclcpp::Node
         rclcpp::Subscription<sensor_msgs::msg::CameraInfo>::SharedPtr camera_info_subcription_;
 
         //Service
-        rclcpp::Service<detector_interfaces::srv::ColorDetection>::SharedPtr service;
+        rclcpp::Service<group18_assignment_2::srv::ColorDetection>::SharedPtr service;
 
         //TF2
         std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
@@ -158,7 +158,9 @@ class ColorDetectorServer : public rclcpp::Node
         * @param request service request (contains the cube ID).
         * @param response service response (to be filled with the detected color).
         */
-        void service_callback(const std::shared_ptr<detector_interfaces::srv::ColorDetection::Request> request,std::shared_ptr<detector_interfaces::srv::ColorDetection::Response> response);
+        void service_callback(const std::shared_ptr<group18_assignment_2::srv::ColorDetection::Request> request,std::shared_ptr<group18_assignment_2::srv::ColorDetection::Response> response);
 
 
 };
+
+#endif // COLOR_DETECTOR_HPP_

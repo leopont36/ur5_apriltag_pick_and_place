@@ -33,9 +33,9 @@ ColorDetectorServer::ColorDetectorServer() : Node("colorDetectorServer")
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
         
         //Create the service
-        service=this->create_service<detector_interfaces::srv::ColorDetection>("color_detect",
-          [this](const std::shared_ptr<detector_interfaces::srv::ColorDetection::Request> request,
-            std::shared_ptr<detector_interfaces::srv::ColorDetection::Response> response) {
+        service=this->create_service<group18_assignment_2::srv::ColorDetection>("color_detect",
+          [this](const std::shared_ptr<group18_assignment_2::srv::ColorDetection::Request> request,
+            std::shared_ptr<group18_assignment_2::srv::ColorDetection::Response> response) {
               
             this->service_callback(request, response);
         },
@@ -135,8 +135,8 @@ std::string ColorDetectorServer::image_to_color(cv::Mat image)
         return detected_color;
 } 
 
-void ColorDetectorServer::service_callback(const std::shared_ptr<detector_interfaces::srv::ColorDetection::Request> request,
-      std::shared_ptr<detector_interfaces::srv::ColorDetection::Response> response)
+void ColorDetectorServer::service_callback(const std::shared_ptr<group18_assignment_2::srv::ColorDetection::Request> request,
+      std::shared_ptr<group18_assignment_2::srv::ColorDetection::Response> response)
 {
 
       RCLCPP_INFO(this->get_logger(), "Request Received");

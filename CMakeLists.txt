@@ -18,11 +18,15 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 find_package(unique_identifier_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(OpenCV REQUIRED)
 
 # generate custom interfaces
 rosidl_generate_interfaces(${PROJECT_NAME}
   "action/MoveToPose.action"
   "action/Gripper.action"
+  "srv/ColorDetection.srv"
   DEPENDENCIES geometry_msgs action_msgs unique_identifier_msgs
 )
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
@@ -77,6 +81,25 @@ ament_target_dependencies(collision_detector
 )   
 target_link_libraries(collision_detector "${cpp_typesupport_target}")
 
+add_executable(color_detector src/color_detector.cpp)
+
+target_include_directories(color_detector PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+ament_target_dependencies(color_detector
+  rclcpp
+  cv_bridge
+  sensor_msgs
+  geometry_msgs
+  tf2_ros
+  tf2_geometry_msgs
+  OpenCV
+)
+target_link_libraries(color_detector "${cpp_typesupport_target}")
+target_link_libraries(color_detector ${OpenCV_LIBS})
+
 
 install(DIRECTORY launch/
   DESTINATION share/${PROJECT_NAME}/launch
@@ -91,6 +114,7 @@ install(TARGETS
   gripper_node
   swap_coordinator
   collision_detector
+  color_detector
   DESTINATION lib/${PROJECT_NAME}
 )
 

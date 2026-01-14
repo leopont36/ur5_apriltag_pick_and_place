@@ -57,6 +57,15 @@ def generate_launch_description():
         emulate_tty=True,
         parameters=[{'use_sim_time': True}]
     )
+
+    color_detector = Node(
+        package='group18_assignment_2',
+        executable='color_detector',
+        name='color_detector',
+        output='screen',
+        emulate_tty=True,
+        parameters=[{'use_sim_time': True}]
+    )
     
     return LaunchDescription([
         # Launch assignment and apriltag
@@ -66,7 +75,7 @@ def generate_launch_description():
         # Gripper, motion and collision after 5 seconds
         TimerAction(
             period=5.0,
-            actions=[gripper_node, motion_planner, collision_detector]
+            actions=[gripper_node, motion_planner, collision_detector, color_detector]
         ),
         
         # Swap coordinator after 20 seconds
