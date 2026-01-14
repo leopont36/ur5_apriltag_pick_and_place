@@ -1,5 +1,5 @@
 # Intelligent robotics assignment 2 - group n. 18
-University project to implement a swapping system for the UR5 robot to exchange the positions of two cubes using MoveIt.
+Solution for the second assignment of the Intelligent Robotics course (Group 18). The project implements an autonomous pick-and-place system for a UR5 robotic arm. The primary objective is to identify two Apriltag-marked cubes (Red and Blue) within a Gazebo simulation and robustly swap their positions while avoiding obstacles.
 
 Participants:
 - Marco Facco (@marcofacco2001) - ID number: 2140334
