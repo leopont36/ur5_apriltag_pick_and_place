@@ -13,8 +13,10 @@ SwapCoordinator::SwapCoordinator() : Node("swap_coordinator_node")
     action_client_ = rclcpp_action::create_client<MoveToPose>(this, "move_to_pose");
 
     gripper_action_client_ = rclcpp_action::create_client<GripperAction>(this, "gripper_action", callback_group_);
+
+    color_client_ = this->create_client<group18_assignment_2::srv::ColorDetection>("color_detect");
     
-    RCLCPP_INFO(this->get_logger(), "Swap Coordinator initialized (RIGOROUS SIDE GRASP MODE)");
+    RCLCPP_INFO(this->get_logger(), "Swap coordinator initialized");
 }
 
 // calculates the position X meters from the target pose, using the z-axis of the gripper as the approach vector.
@@ -183,10 +185,10 @@ bool SwapCoordinator::moveArmOverTarget(geometry_msgs::msg::PoseStamped pose, bo
 
 bool SwapCoordinator::controlGripper(const std::string& cmd)
 {
-    RCLCPP_INFO(get_logger(), "Action Gripper: %s", cmd.c_str());
+    RCLCPP_INFO(get_logger(), "Action gripper: %s", cmd.c_str());
 
     if (!gripper_action_client_->wait_for_action_server(std::chrono::seconds(5))) {
-        RCLCPP_ERROR(get_logger(), "Gripper Action Server not available");
+        RCLCPP_ERROR(get_logger(), "Gripper action server not available");
         return false;
     }
 
@@ -218,12 +220,12 @@ bool SwapCoordinator::controlGripper(const std::string& cmd)
     auto result = result_future.get();
     if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
         if (result.result->success) {
-            RCLCPP_INFO(get_logger(), "Gripper Action OK: %s", result.result->message.c_str());
+            RCLCPP_INFO(get_logger(), "Gripper action OK: %s", result.result->message.c_str());
             return true;
         }
     }
 
-    RCLCPP_WARN(get_logger(), "Gripper Action Failed: %s", result.result->message.c_str());
+    RCLCPP_WARN(get_logger(), "Gripper action Failed: %s", result.result->message.c_str());
     return false;
 }
 
@@ -247,19 +249,19 @@ bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometr
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     // PICK SEQUENCE
-    RCLCPP_INFO(get_logger(), "[PICK] Moving to Approach...");
+    RCLCPP_INFO(get_logger(), "[PICK] Moving to approach...");
     if (!moveArmOverTarget(pick_approach, false)) return false;
 
-    RCLCPP_INFO(get_logger(), "[PICK] Moving to Grasp...");
+    RCLCPP_INFO(get_logger(), "[PICK] Moving to grasp...");
     if (!moveArmOverTarget(pick, false)) return false;
     
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    RCLCPP_INFO(get_logger(), "[PICK] Closing Gripper...");
+    RCLCPP_INFO(get_logger(), "[PICK] Closing gripper...");
     if (!controlGripper("grasp")) return false;
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    RCLCPP_INFO(get_logger(), "[PICK] Lifting Object...");
+    RCLCPP_INFO(get_logger(), "[PICK] Lifting object...");
     if (!moveArmOverTarget(pick_lift, false)) return false;
 
     // PLACE SEQUENCE 
@@ -281,6 +283,33 @@ bool SwapCoordinator::pickAndPlace(geometry_msgs::msg::PoseStamped pick, geometr
     return true;
 }
 
+bool SwapCoordinator::detectColor(const std::string& cube_id)
+{
+    // Wait for service availability
+    if (!color_client_->wait_for_service(std::chrono::seconds(5))) {
+        RCLCPP_ERROR(this->get_logger(), "Color detection service 'color_detect' not available.");
+        return false;
+    }
+
+    auto request = std::make_shared<group18_assignment_2::srv::ColorDetection::Request>();
+    request->cube_id = cube_id;
+
+    RCLCPP_INFO(this->get_logger(), "Requesting color check for: %s", cube_id.c_str());
+
+    auto result_future = color_client_->async_send_request(request);
+
+    // Wait for the result (using the node's existing threaded executor context)
+    if (result_future.wait_for(std::chrono::seconds(20)) != std::future_status::ready) {
+        RCLCPP_ERROR(this->get_logger(), "Color detection timed out.");
+        return false;
+    }
+
+    auto result = result_future.get();
+    RCLCPP_INFO(this->get_logger(), ">>> COLOR DETECTED for %s: %s", cube_id.c_str(), result->color.c_str());
+    
+    return true;
+}
+
 int main(int argc, char** argv) 
 {
     rclcpp::init(argc, argv);
@@ -295,13 +324,20 @@ int main(int argc, char** argv)
 
     RCLCPP_INFO(node->get_logger(), "Waiting for TF buffer to fill...");
     std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    std::string tag1 = "tag36h11:1";
+    std::string tag2 = "tag36h11:10";
     
-    if (node->swapTags("tag36h11:10", "tag36h11:1")) 
+    if (node->swapTags(tag1, tag2)) 
     {
         RCLCPP_INFO(node->get_logger(), "--- SWAP SUCCESS ---");
     } else {
         RCLCPP_ERROR(node->get_logger(), "--- SWAP FAILED ---");
     }
+
+    RCLCPP_INFO(node->get_logger(), "--- STARTING COLOR VERIFICATION ---");
+    node->detectColor(tag1);
+    node->detectColor(tag2);
     
     rclcpp::shutdown();
     spinner.join();

@@ -13,6 +13,7 @@
 #include "tf2/LinearMath/Quaternion.hpp"
 #include "tf2/LinearMath/Matrix3x3.hpp" 
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "group18_assignment_2/srv/color_detection.hpp"
 
 #include <thread>
 #include <cmath> 
@@ -49,6 +50,15 @@ public:
      * @return true if the entire sequence is completed successfully.
      */
     bool swapTags(const std::string& tag1_frame, const std::string& tag2_frame);
+
+    /**
+     * @brief Requests the color detection service for a specific cube.
+     * * Calls the color detection service client to identify the color of the
+     * object associated with the given frame ID.
+     * * @param cube_id the TF frame ID of the cube (e.g., "tag36h11:1")
+     * @return true if the service call was successful and a result was received
+     */
+    bool detectColor(const std::string& cube_id);
     
 private:
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
@@ -57,6 +67,7 @@ private:
 
     rclcpp_action::Client<MoveToPose>::SharedPtr action_client_;
     rclcpp_action::Client<group18_assignment_2::action::Gripper>::SharedPtr gripper_action_client_;
+    rclcpp::Client<group18_assignment_2::srv::ColorDetection>::SharedPtr color_client_;
     rclcpp::CallbackGroup::SharedPtr callback_group_;
 
     /**
